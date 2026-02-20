@@ -1,0 +1,34 @@
+model: CET 
+
+emb_dim: 256
+num_layers: 8
+num_heads: 8
+num_rbf: 64
+rbf_type: expnorm
+trainable_rbf: false # consider changing
+neighbor_embedding: true
+max_num_neighbors: 64 #32
+distance_influence: both
+
+aggregation: add
+activation: silu
+cutoff_lower: 0.0
+cutoff_upper: 5.0
+max_z: 118
+
+derivative: False
+layernorm_on_vec: False
+vector_cutoff: True  #TODO test this
+
+p_dropcond: 0.2 #0.2
+p_droppath: 0.1
+
+inv_post_norm: True
+vec_post_norm: False # way too slow
+vec_prenorm: True
+
+emb_agg : sum
+
+
+
+

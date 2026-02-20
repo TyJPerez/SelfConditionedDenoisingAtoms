@@ -1,0 +1,92 @@
+
+#THIS SCRIPT IS BEST FOR homo, lumo, gap, fine tuning
+load_model: null
+log_dir: experiments/
+
+model_config: configs/model_configs/scd.yaml
+set_head_agg: mean
+
+## DATASET & LOADER INPUTS ###
+dataset: MBgap
+dataset_root: null # FIXME
+dataset_arg : 0 # fold selection
+predefined_splits: true
+
+prior_model: null #PositiveOutput
+
+train_size: null #DEBUG
+test_size: null
+val_size: null
+
+batch_size: 8
+inference_batch_size: 8
+seed: 1
+num_workers: 8
+
+splits: null
+standardize: True # FIXME - Try this off
+
+denoising_only: False 
+energy_weight: 1.0 # weight on y loss
+force_weight: 1.0
+ema_alpha_dy: 1.0
+ema_alpha_y: 1.0
+
+distributed_backend: ddp
+early_stopping_patience: 1500
+ngpus: -1
+num_nodes: 1
+redirect: false
+
+lr: 0.0002
+
+lr_schedule: cosine
+lr_factor: 0.5
+lr_min: 1.0e-07
+lr_patience: 15
+lr_warmup_steps: 10000 
+lr_cosine_length: 300000
+num_epochs: 3000 # DEBUG
+num_steps: 300000 #DEBUG
+precision: 32
+
+save_interval: 5 
+test_interval: 1
+
+wandb_notes: ""
+job_id: auto
+
+pretraining: false
+self_cond: false
+
+weight_decay: 0.01 # Try lowering to 1e5
+droppath_warmup: True
+init_droppath: 0.15
+final_droppath: 0.0 #0.01
+beta1: 0.995
+
+momentum_update: False
+model_momentum: 0.996
+val_ema_model: False
+
+# data agumentations
+random_rotate: False
+torsion_angle_std: 0
+max_bonds_rotated : 0
+p_invert : 0.0
+
+noise_scale: 0.0005
+denoising_weight: 0.01
+
+graph_cutoff: 5.0
+noise_in_loader: True
+allow_periodic: True
+p_cell_repeat: 0.0
+cell_repeat_iters: 0
+rep_min_atoms : 0
+
+#batch clipping 
+max_nodes_per_batch : 1000
+batch_clipper_cache_size : 1000
+allow_test_clipping : False
+

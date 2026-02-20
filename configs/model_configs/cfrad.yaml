@@ -1,0 +1,42 @@
+model: CFrad 
+
+emb_dim: 256
+num_layers: 8
+num_heads: 8
+num_rbf: 64
+rbf_type: expnorm
+trainable_rbf: false # consider changing
+neighbor_embedding: true
+max_num_neighbors: 32
+distance_influence: both
+
+aggregation: add
+activation: silu
+cutoff_lower: 0.0
+cutoff_upper: 5.0
+derivative: false
+max_z: 118
+
+derivative: false
+layernorm_on_vec: True #meaningful improvment for frad, keep on
+
+p_dropcond: 0.2 #0.2
+p_droppath: 0.1
+
+inv_post_norm: True # TODO: impliment this in model
+vec_prenorm: True
+
+emb_agg : sum # TRY mean version
+
+### FRAD specific parameters - copied from original FRAD repo
+num_spherical : 3 
+num_radial : 6
+envelope_exponent : 5
+int_emb_size : 64
+basis_emb_size_dist : 8
+basis_emb_size_angle : 8
+basis_emb_size_torsion : 8
+num_before_skip : 1
+num_after_skip : 2
+
+

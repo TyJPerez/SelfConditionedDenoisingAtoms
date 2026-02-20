@@ -1,0 +1,22 @@
+model: ET #equivariant-transformer
+
+emb_dim: 256
+num_layers: 8
+num_heads: 8
+num_rbf: 64
+rbf_type: expnorm
+trainable_rbf: false # consider changing
+neighbor_embedding: true
+max_num_neighbors: 32
+distance_influence: both
+
+aggregation: add
+activation: silu
+cutoff_lower: 0.0
+cutoff_upper: 5.0
+max_z: 118
+
+derivative: false
+layernorm_on_vec: True
+
+vector_cutoff: True # New
