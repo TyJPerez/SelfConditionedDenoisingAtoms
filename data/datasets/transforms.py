@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 from torch_geometric.transforms import BaseTransform
-from StructureCloud.utils.augment import repeat_unit_cell
+# from StructureCloud.utils.augment import repeat_unit_cell
 import os
 try: 
     from StructureCloud.Datasets.utils import hf_cache_location
@@ -49,11 +49,11 @@ class AddStandardKeys(BaseTransform):
         self.remove_edge_index = remove_edge_index
         # self.force_pbc = force_pbc
     
-    def __call__(self, data, depth=0):
+    def forward(self, data, depth=0):
 
         if isinstance(data, tuple) and depth==0:
             #recursivly apply to each data object in the tuple
-            out = tuple([self.__call__(d, depth=depth+1) for d in data])
+            out = tuple([self.forward(d, depth=depth+1) for d in data])
             return out
 
         # Add PBC attribute
@@ -138,11 +138,11 @@ class RandomCellRepeats(BaseTransform):
         self.cell_key = cell_key
         self.track_repeats = track_repeats
     
-    def __call__(self, data, depth=0):
+    def forward(self, data, depth=0):
 
         if isinstance(data, tuple) and depth==0:
             #recursivly apply to each data object in the tuple
-            out = tuple([self.__call__(d, depth=depth+1) for d in data])
+            out = tuple([self.forward(d, depth=depth+1) for d in data])
             return out
          
         # Ensure we have required attributes
@@ -327,7 +327,7 @@ class CreateGraph(BaseTransform):
 
         self.self_loops = self_loops
 
-    def __call__(self, data):
+    def forward(self, data):
         if isinstance(data, list):
             #throw not implemented error
             raise NotImplementedError("Batch processing not implemented")
@@ -417,7 +417,7 @@ class SCD_noise(BaseTransform):
             alt_cell_key=alt_cell_key,
             )
     
-    def __call__(self, data, depth=0):
+    def forward(self, data, depth=0):
 
         if self.simple_noise:
             # add noise and return a single target
@@ -425,7 +425,7 @@ class SCD_noise(BaseTransform):
             
             if isinstance(data, tuple) and depth==0:
                 #recursivly apply to each data object in the tuple
-                out = tuple([self.__call__(d, depth=depth+1) for d in data])
+                out = tuple([self.forward(d, depth=depth+1) for d in data])
                 return out
 
             if self.corrupt_noise > 0.0:
@@ -473,7 +473,59 @@ class Compose(BaseTransform):
     def __init__(self, transforms):
         self.transforms = transforms
     
-    def __call__(self, data):
+    def forward(self, data):
         for transform in self.transforms:
             data = transform(data)
         return data
+    
+
+
+def repeat_unit_cell(pos, z, box, reps = (1,1,1), fractional_pos=False):
+    ''' 
+    repeat the unit cell in pos, z, box by reps in each direction
+    
+    args:
+        pos: (N, 3) tensor of atomic positions
+        z: (N,) tensor of atomic numbers
+        box: (3, 3) or (1,3,3) tensor of unit cell vectors
+        reps: tuple of 3 integers, number of repetitions in each direction
+        fractional_pos: bool, if True, pos is assumed to be fractional coordinates. Fractional coordinates are returned in output.
+    returns:
+        out_pos: (N*kx*ky*kz, 3) tensor of atomic positions
+        out_z: (N*kx*ky*kz,) tensor of atomic numbers
+        out_box: (3, 3) or (1,3,3) tensor of new unit cell vectors
+
+    '''
+    in_shape = box.shape
+    box = box.squeeze()
+    if not fractional_pos:
+        #transform to fractional coordinates
+        frac_pos = torch.einsum('nd,dk->nk', pos.clone(), torch.inverse(box))
+    else:
+        frac_pos = pos.clone()
+    
+    if isinstance(reps, tuple) or isinstance(reps, list):
+        kx, ky, kz = reps
+        
+    new_pos = []
+    new_z = []
+    for i in range(kx):
+        for j in range(ky):
+            for k in range(kz):
+                shift = torch.tensor([i, j, k], dtype=frac_pos.dtype, device=frac_pos.device)
+                # shift = torch.einsum('d,dk->k', shift, mol.box)
+                new_pos.append(frac_pos.clone() + shift)
+                new_z.append(z.clone())
+
+
+    z = torch.cat(new_z, dim=0)
+    frac_pos = torch.cat(new_pos, dim=0)
+    if fractional_pos:
+        out_pos = frac_pos
+    else:
+        out_pos = torch.einsum('nd,dk->nk', frac_pos.clone(), box)
+
+    box = torch.diag(torch.tensor(reps, dtype=box.dtype, device=box.device))@ box
+    box = box.reshape(in_shape)
+
+    return out_pos, z, box

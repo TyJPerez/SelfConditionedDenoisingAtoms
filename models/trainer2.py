@@ -24,8 +24,8 @@ from copy import deepcopy
 from models.modules.contrastive import ContrastiveLoss
 
 #batch clipping
-from StructureCloud.utils.clipper import BatchClipper, TupleBatchClipper
-
+# from StructureCloud.utils.clipper import BatchClipper, TupleBatchClipper
+from data.batchclipper import BatchClipper, TupleBatchClipper
 
 from scipy.stats import spearmanr
 from scipy.stats import pearsonr

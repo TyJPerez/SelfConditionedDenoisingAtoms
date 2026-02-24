@@ -13,26 +13,51 @@ import importlib.machinery
 from torch import Tensor
 from typing import Tuple
 
+##Check if the extension has been compiled, if not, set a flag and continue with limited functionality.
+# The extension is optional - if not compiled, the model will use the slower GraphGenerator instead.
+
+# Global flag to track if extensions are available
+EXTENSIONS_AVAILABLE = False
 
 def _load_library(library):
     """Load a dynamic library containing torch extensions from the given path.
     Args:
         library (str): The name of the library to load.
+    Returns:
+        bool: True if successfully loaded, False otherwise.
     """
     # Find the specification for the library
     spec = importlib.machinery.PathFinder().find_spec(library, [osp.dirname(__file__)])
     # Check if the specification is found and load the library
     if spec is not None:
-        torch.ops.load_library(spec.origin)
+        try:
+            torch.ops.load_library(spec.origin)
+            return True
+        except Exception as e:
+            import warnings
+            warnings.warn(
+                f"Failed to load extension '{library}': {e}\n"
+                "The model will use GraphGenerator (slower) instead of OptimizedDistance.\n"
+                "To enable faster graph generation, compile the extensions by running:\n"
+                "  cd models/ET_models && python setup.py install",
+                RuntimeWarning
+            )
+            return False
     else:
-        raise ImportError(
-            f"Could not find module '{library}' in {osp.dirname(__file__)}"
+        import warnings
+        warnings.warn(
+            f"Extension '{library}' not found in {osp.dirname(__file__)}\n"
+            "The model will use GraphGenerator (slower) instead of OptimizedDistance.\n"
+            "To enable faster graph generation, compile the extensions by running:\n"
+            "  cd models/ET_models && python setup.py install",
+            RuntimeWarning
         )
+        return False
 
 
-_load_library("torchmdnet_extensions")
+EXTENSIONS_AVAILABLE = _load_library("torchmdnet_extensions")
 
-__all__ = ["is_current_stream_capturing", "get_neighbor_pairs_kernel"]
+__all__ = ["is_current_stream_capturing", "get_neighbor_pairs_kernel", "EXTENSIONS_AVAILABLE"]
 
 
 def is_current_stream_capturing():
@@ -42,6 +67,8 @@ def is_current_stream_capturing():
 
     This utility is required because the builtin torch function that does this is not scriptable.
     """
+    if not EXTENSIONS_AVAILABLE:
+        return False
     _is_current_stream_capturing = (
         torch.ops.torchmdnet_extensions.is_current_stream_capturing
     )
@@ -98,6 +125,13 @@ def get_neighbor_pairs_kernel(
     num_pairs : Tensor
         The number of pairs found.
     """
+    if not EXTENSIONS_AVAILABLE:
+        raise RuntimeError(
+            "C++ extensions are not available. Cannot use OptimizedDistance.\n"
+            "Please either:\n"
+            "  1. Compile the extensions: cd models/ET_models && python setup.py install\n"
+            "  2. Use GraphGenerator instead by setting legacy=False in the model config"
+        )
     return torch.ops.torchmdnet_extensions.get_neighbor_pairs(
         strategy,
         positions,
@@ -145,16 +179,18 @@ def get_neighbor_pairs_fwd_meta(
 
 
 if torch.__version__ >= "2.2.0":
-    from torch.library import register_fake
+    if EXTENSIONS_AVAILABLE:
+        from torch.library import register_fake
 
-    register_fake(
-        "torchmdnet_extensions::get_neighbor_pairs_bkwd", get_neighbor_pairs_bkwd_meta
-    )
-    register_fake(
-        "torchmdnet_extensions::get_neighbor_pairs_fwd", get_neighbor_pairs_fwd_meta
-    )
+        register_fake(
+            "torchmdnet_extensions::get_neighbor_pairs_bkwd", get_neighbor_pairs_bkwd_meta
+        )
+        register_fake(
+            "torchmdnet_extensions::get_neighbor_pairs_fwd", get_neighbor_pairs_fwd_meta
+        )
 elif torch.__version__ < "2.2.0" and torch.__version__ >= "2.0.0":
-    # torch.compile is not able to compile this function in old versions
-    import torch._dynamo as dynamo
+    if EXTENSIONS_AVAILABLE:
+        # torch.compile is not able to compile this function in old versions
+        import torch._dynamo as dynamo
 
-    dynamo.disallow_in_graph(torch.ops.torchmdnet_extensions.get_neighbor_pairs)
+        dynamo.disallow_in_graph(torch.ops.torchmdnet_extensions.get_neighbor_pairs)

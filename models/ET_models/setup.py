@@ -64,6 +64,13 @@ extensions = ExtensionType(
 )
 
 if __name__ == "__main__":
+    print("=" * 80)
+    print("Building TorchMD-NET C++ Extensions")
+    print("=" * 80)
+    print("This will compile optimized neighbor list kernels for faster graph generation.")
+    print("If compilation fails, the model will still work using GraphGenerator (slower).")
+    print("=" * 80)
+    
     setup(
         ext_modules=[extensions],
         cmdclass={
@@ -78,3 +85,8 @@ if __name__ == "__main__":
         ]
         + extra_deps,
     )
+    
+    print("=" * 80)
+    print("Extensions compiled successfully!")
+    print("The model will now use OptimizedDistance for faster graph generation.")
+    print("=" * 80)

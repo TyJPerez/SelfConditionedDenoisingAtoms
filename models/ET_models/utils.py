@@ -7,7 +7,7 @@ from typing import Optional, Tuple
 import torch
 from torch import nn, Tensor
 import torch.nn.functional as F
-from .extensions import get_neighbor_pairs_kernel
+from .extensions import get_neighbor_pairs_kernel, EXTENSIONS_AVAILABLE
 import warnings
 import numpy as np
 
@@ -284,6 +284,8 @@ class NeighborEmbedding(nn.Module):
         return x_neighbors
 
 
+
+
 class OptimizedDistance(torch.nn.Module):
     """Compute the neighbor list for a given cutoff.
 
@@ -364,6 +366,18 @@ class OptimizedDistance(torch.nn.Module):
         long_edge_index=True,
     ):
         super(OptimizedDistance, self).__init__()
+
+        # Check if the optimized distance kernel has been compiled
+        if not EXTENSIONS_AVAILABLE:
+            warnings.warn(
+                "OptimizedDistance requires compiled C++ extensions which are not available.\n"
+                "The model will fail if OptimizedDistance is used.\n"
+                "Please either:\n"
+                "  1. Compile the extensions: cd models/ET_models && python setup.py build_ext --inplace\n"
+                "  2. Use GraphGenerator instead (set legacy=False in model config). This will also require batching data to be influded in the forward pass.",
+                RuntimeWarning
+            )
+
         self.cutoff_upper = cutoff_upper
         self.cutoff_lower = cutoff_lower
         self.max_num_pairs = max_num_pairs
@@ -674,133 +688,6 @@ class CosineCutoff(nn.Module):
             # remove contributions beyond the cutoff radius
             cutoffs = cutoffs * (distances < self.cutoff_upper)
             return cutoffs
-
-
-# class MLP(nn.Module):
-#     r"""A simple multi-layer perceptron with a given number of layers and hidden channels.
-
-#     The simplest MLP has no hidden layers and is composed of two linear layers with a non-linear activation function in between:
-
-#     .. math::
-
-#         \text{MLP}(x) = \text{Linear}_o(\text{act}(\text{Linear}_i(x)))
-
-#     Where :math:`\text{Linear}_i` has input size :math:`\text{in_channels}` and output size :math:`\text{hidden_channels}` and :math:`\text{Linear}_o` has input size :math:`\text{hidden_channels}` and output size :math:`\text{out_channels}`.
-
-
-#     Args:
-#         in_channels (int): Number of input features.
-#         out_channels (int): Number of output features.
-#         hidden_channels (int): Number of hidden features.
-#         activation (str): Activation function to use.
-#         num_hidden_layers (int, optional): Number of hidden layers. Defaults to 0.
-#         dtype (torch.dtype, optional): Data type to use. Defaults to torch.float32.
-#     """
-
-#     def __init__(
-#         self,
-#         in_channels,
-#         out_channels,
-#         hidden_channels,
-#         activation,
-#         num_hidden_layers=0,
-#         dtype=torch.float32,
-#     ):
-#         super(MLP, self).__init__()
-#         act_class = act_class_mapping[activation]
-#         self.act = act_class()
-#         self.layers = nn.Sequential()
-#         self.layers.append(nn.Linear(in_channels, hidden_channels, dtype=dtype))
-#         self.layers.append(self.act)
-#         for _ in range(num_hidden_layers):
-#             self.layers.append(nn.Linear(hidden_channels, hidden_channels, dtype=dtype))
-#             self.layers.append(self.act)
-#         self.layers.append(nn.Linear(hidden_channels, out_channels, dtype=dtype))
-
-#     def reset_parameters(self):
-#         for layer in self.layers:
-#             if isinstance(layer, nn.Linear):
-#                 nn.init.xavier_uniform_(layer.weight)
-#                 layer.bias.data.fill_(0)
-
-#     def forward(self, x):
-#         x = self.layers(x)
-#         return x
-
-
-# class GatedEquivariantBlock(nn.Module):
-#     """Gated Equivariant Block as defined in Schütt et al. (2021):
-#     Equivariant message passing for the prediction of tensorial properties and molecular spectra
-#     """
-
-#     def __init__(
-#         self,
-#         hidden_channels,
-#         out_channels,
-#         intermediate_channels=None,
-#         activation="silu",
-#         scalar_activation=False,
-#         dtype=torch.float,
-#     ):
-#         super(GatedEquivariantBlock, self).__init__()
-#         self.out_channels = out_channels
-
-#         if intermediate_channels is None:
-#             intermediate_channels = hidden_channels
-
-#         self.vec1_proj = nn.Linear(
-#             hidden_channels, hidden_channels, bias=False, dtype=dtype
-#         )
-#         self.vec2_proj = nn.Linear(
-#             hidden_channels, out_channels, bias=False, dtype=dtype
-#         )
-
-#         act_class = act_class_mapping[activation]
-#         self.update_net = MLP(
-#             in_channels=hidden_channels * 2,
-#             out_channels=out_channels * 2,
-#             hidden_channels=intermediate_channels,
-#             activation=activation,
-#             num_hidden_layers=0,
-#             dtype=dtype,
-#         )
-#         self.act = act_class() if scalar_activation else None
-
-#     def reset_parameters(self):
-#         nn.init.xavier_uniform_(self.vec1_proj.weight)
-#         nn.init.xavier_uniform_(self.vec2_proj.weight)
-#         self.update_net.reset_parameters()
-
-#     def forward(self, x, v):
-#         vec1_buffer = self.vec1_proj(v)
-
-#         # detach zero-entries to avoid NaN gradients during force loss backpropagation
-#         vec1 = torch.zeros(
-#             vec1_buffer.size(0),
-#             vec1_buffer.size(2),
-#             device=vec1_buffer.device,
-#             dtype=vec1_buffer.dtype,
-#         )
-#         mask = (vec1_buffer != 0).view(vec1_buffer.size(0), -1).any(dim=1)
-#         if not mask.all():
-#             warnings.warn(
-#                 (
-#                     f"Skipping gradients for {(~mask).sum()} atoms due to vector features being zero. "
-#                     "This is likely due to atoms being outside the cutoff radius of any other atom. "
-#                     "These atoms will not interact with any other atom unless you change the cutoff."
-#                 )
-#             )
-#         vec1[mask] = torch.norm(vec1_buffer[mask], dim=-2)
-
-#         vec2 = self.vec2_proj(v)
-
-#         x = torch.cat([x, vec1], dim=-1)
-#         x, v = torch.split(self.update_net(x), self.out_channels, dim=-1)
-#         v = v.unsqueeze(1) * vec2
-
-#         if self.act is not None:
-#             x = self.act(x)
-#         return x, v
 
 
 def _broadcast(src: torch.Tensor, other: torch.Tensor, dim: int):

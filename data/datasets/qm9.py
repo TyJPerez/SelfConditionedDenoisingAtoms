@@ -12,19 +12,19 @@ class QM9(QM9_geometric):
     0 :'mu', # use special head, no standardization 
     5 : 'R2', # use special head, no standardization 
 
-    # use standardization and no prior model
-    1 :'alpha', # long run (500k), noise_weight=0.2
+    # use standardization (norm to unit gaussian) and no prior model
+    1 :'alpha', 
     2 :'homo',
     3 :'lumo',
     4 :'gap',
-    6 : 'zpve', # long run (500k), noise_weight=0.2
+    6 : 'zpve', 
     11 : 'cv',
 
-    #use atomref with no standardization
-    7 : 'u0', # long run (500k) noise_weight=0.2
-    8 : 'u298', # long run (500k) noise_weight=0.2
-    9 : 'h298', # long run (500k) noise_weight=0.2
-    10 : 'g298', # long run (500k) noise_weight=0.2
+    #use atomref with no standardization (no shift or scale)
+    7 : 'u0', 
+    8 : 'u298', 
+    9 : 'h298', 
+    10 : 'g298', 
 
     12 : 'u0_atom', #FIXME
     13 : 'u298_atom', #FIXME
@@ -102,105 +102,18 @@ class QM9(QM9_geometric):
 
 
 
+# class QM9_ref(QM9):
+#     def __init__(self, root, dataset_arg=None, transform=None):
+#         super().__init__(root=root, transform=None, dataset_arg=dataset_arg )
 
-class QM9_ref(QM9):
-    def __init__(self, root, dataset_arg=None, transform=None):
-        super().__init__(root=root, transform=None, dataset_arg=dataset_arg )
+#         self.tfm = transform
 
-        self.tfm = transform
+#     def __getitem__(self, idx):
 
-    def __getitem__(self, idx):
+#         data = super().__getitem__(idx)
 
-        data = super().__getitem__(idx)
+#         if self.tfm is not None:
+#             data = self.tfm(data)
 
-        if self.tfm is not None:
-            data = self.tfm(data)
+#         return data
 
-        return data
-
-def compute_qm9_ref_offset(root):
-    '''
-    Compute element reference energies for QM9 dataset targets using fairchem library.
-    Saves the reference energies to disk for later use in training.
-    '''
-
-    try:
-        import fairchem.core
-    except ImportError:
-        raise ImportError(
-            "fairchem library is required to compute element references. "
-        )
-
-    from fairchem.core.modules.normalization.element_references import fit_linear_references
-    from fairchem.core.datasets import AseDBDataset
-
-    ### for each qm9 target, compute a reference energy for each of the 5 elements used [H, C, N, O, F]
-    # create a dict to hold the reference energies
-    # 
-    
-    #compute reference energy values for only these targets
-    all_targets = ['u0', 'u298', 'h298', 'g298'] #, 'alpha', 'homo', 'lumo', 'gap', 'zpve', 'cv']
-    batch_size = 128
-    num_batches = 100 #2000 #1020
-    num_workers = 8
-
-    output_dir = Path(root)
-
-    print(f'Output directory: {output_dir}')
-    
-    #assert the path exists
-    assert output_dir.exists()
-
-    def format_y(data):
-        data.y = data.y.float().squeeze()
-        data.atomic_numbers = data.z
-        return data
-
-    for var in all_targets:
-        print(f'Processing {var}')
-        qm9_ds = QM9_ref(root, dataset_arg=var, transform=format_y)
-
-        # print('qm9 loaded')
-        # sample = qm9_ds[0]
-        # print(sample)
-        # exit()
-
-        element_refs = fit_linear_references(
-        targets=["y"],  # Add "forces" if needed
-        dataset=qm9_ds,
-        batch_size=batch_size,
-        num_batches=num_batches,
-        num_workers=num_workers,
-        max_num_elements=118,
-        driver="least_squares",  # or "ridge" for regularization
-        )
-
-        for target, references in element_refs.items():
-            save_path = output_dir / f"{var}_ref.pt"
-            torch.save(references.state_dict(), save_path)
-            print(f"\n{target} references saved to: {save_path}")
-            
-            # Print some reference values
-            state = references.state_dict()
-            print(f"  Shape: {state['element_references'].shape}")
-            print(f"  Non-zero elements: {(state['element_references'] != 0).sum().item()}")
-            
-            # Show first few non-zero references (H, C, N, O typically)
-            refs = state['element_references']
-            for z in range(1, min(20, len(refs))):
-                if refs[z] != 0:
-                    print(f"    Element {z}: {refs[z].item():.4f} eV")
-
-
-if __name__ == "__main__":
-
-    # parent_directory = "/global/homes/t/tyjperez/Projects/SelfConditionedDenoising/"
-    # dataset_path = os.path.join(parent_directory, "tmp/qm9")
-    
-    dataset_path = 'tmp/qm9'
-    #assert that the dataset exists
-    assert os.path.exists(dataset_path), f"Dataset path {dataset_path} does not exist. Please download the QM9 dataset first."
-    
-    compute_qm9_ref_offset(
-        root = dataset_path
-    )

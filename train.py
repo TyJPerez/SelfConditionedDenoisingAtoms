@@ -40,8 +40,6 @@ import time
 import shutil
 
 
-
-
 def get_args():
 
     # fmt: off
@@ -523,7 +521,6 @@ if __name__ == "__main__":
 # python train.py --conf configs/cet-mbgap_grimm.yaml --job-id etmbgap_grm_b16_nz0_dp001_headmean_lr1e4
 # python train.py --conf configs/cet-mbgap_grimm.yaml --job-id etmbgap_grm_b16nz0dp001_hm_lr1e4_prep03 --p_cell_repeat 0.3 --cell_repeat_iters 2
 # python train.py --conf configs/cet-mbgap_grimm.yaml --job-id etmbgap_grm_b16_hm_nz005_lr1e4 --noise-scale 0.005 --denoising-weight 0.1
-
 
 
 # python train.py --conf configs/cet-mbgap_grimm.yaml --job-id etmbgap_grm_b16_hm_dp01 --final-droppath 0.1

@@ -23,9 +23,11 @@ from .utils import (
     scatter,
     EquivariantLayerNorm,
 )
+from .extensions import EXTENSIONS_AVAILABLE
 
 from models.ET_models.graph_utils.compute import GraphGenerator
 from models.modules.conditioning import adaLN2, DropPath, DropCond, DyT, JointDropPath
+
 
 class CondEquivMultiHeadAttention(nn.Module):
     """Equivariant multi-head attention layer."""
@@ -362,6 +364,16 @@ class ConditionalET(nn.Module):
 
         self.embedding = nn.Embedding(self.max_z, hidden_channels, dtype=dtype)
 
+        # Determine which graph generator to use
+        # If extensions are not available, automatically use GraphGenerator (legacy=False)
+        if not EXTENSIONS_AVAILABLE and legacy:
+            import warnings
+            warnings.warn(
+                "C++ extensions not available. Automatically switching to GraphGenerator (legacy=False).\n"
+                "To use OptimizedDistance, compile extensions: cd models/ET_models && python setup.py build_ext --inplace",
+                RuntimeWarning
+            )
+            legacy = False
 
         self.distance = OptimizedDistance( # ET original graph generator
             self.cutoff_lower,
