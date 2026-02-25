@@ -119,6 +119,7 @@ class ParityPlot(Callback):
         predictions = []
         targets = []
         nodes_per_graph_list = []
+        batch_indices_list = []  # Track batch indices for per-node predictions
 
         #the model will use the internal test step for all parity plots
         internal_stage_flag = 'test' 
@@ -159,6 +160,16 @@ class ParityPlot(Callback):
                     
                     predictions.append(pred.cpu())
                     targets.append(target.cpu())
+                
+                elif hasattr(batch, 'noise') and batch.noise is not None:
+                    # If batch has noise, use it as target (e.g., for self-conditioned models)
+                    target = batch.noise
+                    pred = output_dict.get('noise_pred', None)
+                    
+                    predictions.append(pred.cpu())
+                    targets.append(target.cpu())
+                    # Store batch indices for per-node coloring
+                    batch_indices_list.append(batch.batch.cpu())
 
                 # if len(nodes_per_graph_list) >= max_samples:
                 #     break  # Limit to max_samples for plotting
@@ -170,39 +181,55 @@ class ParityPlot(Callback):
         # Concatenate all predictions and targets
         predictions = torch.cat(predictions, dim=0).numpy()
         targets = torch.cat(targets, dim=0).numpy()
-        nodes_per_graph_array = np.array(nodes_per_graph_list)
-        max_nodes_per_graph = nodes_per_graph_array.max()
-        min_nodes_per_graph = nodes_per_graph_array.min()
-        mean_nodes_per_graph = nodes_per_graph_array.mean()
-        std_nodes_per_graph = nodes_per_graph_array.std()
-        vmin = nodes_per_graph_array.min()
+        
+        # Prepare nodes_per_graph for coloring
+        nodes_per_graph_flat = np.array(nodes_per_graph_list)
+        
+        # If we have per-node predictions, expand nodes_per_graph to match
+        if len(batch_indices_list) > 0:
+            # Per-node predictions (e.g., 3D noise vectors)
+            # Expand node counts so each node gets its graph's count as color value
+            nodes_per_node = []
+            for node_count in nodes_per_graph_list:
+                nodes_per_node.extend([node_count] * node_count)
+            nodes_per_graph_array = np.array(nodes_per_node)
+            # If predictions are multi-dimensional (e.g., shape (N, 3)), scatter flattens
+            # them to N*3 points, so we need to repeat the color array accordingly
+            if predictions.ndim > 1:
+                nodes_per_graph_array = np.repeat(nodes_per_graph_array, predictions.shape[1])
+        else:
+            nodes_per_graph_array = nodes_per_graph_flat
+        
+        # Compute stats from per-graph counts (not expanded)
+        max_nodes_per_graph = nodes_per_graph_flat.max()
+        min_nodes_per_graph = nodes_per_graph_flat.min()
+        mean_nodes_per_graph = nodes_per_graph_flat.mean()
+        std_nodes_per_graph = nodes_per_graph_flat.std()
+        vmin = nodes_per_graph_flat.min()
         vmax = mean_nodes_per_graph + 2 * std_nodes_per_graph
         print(f"Nodes per graph - min: {min_nodes_per_graph}, max: {max_nodes_per_graph}, mean: {mean_nodes_per_graph:.2f}, std: {std_nodes_per_graph:.2f}" )
 
-        # Calculate metrics
-        r2 = r2_score(targets, predictions)
-        mae = mean_absolute_error(targets, predictions)
-        # rmse = np.sqrt(mean_squared_error(targets, predictions))
-        pearson_corr, spearman_corr, rmse = compute_corr(predictions, targets)
+        # Flatten multi-dimensional predictions (e.g., 3D noise) for scalar metrics
+        predictions_flat = predictions.flatten()
+        targets_flat = targets.flatten()
 
-        ## TODO: add pearson correlation coefficient
-        ## TODO: add spearman correlation coefficient
+        # Calculate metrics
+        r2 = r2_score(targets_flat, predictions_flat)
+        mae = mean_absolute_error(targets_flat, predictions_flat)
+        pearson_corr, spearman_corr, rmse = compute_corr(predictions_flat, targets_flat)
+
         
         # Create parity plot
         fig, ax = plt.subplots(figsize=(8, 8))
         
         # Scatter plot - colored by nodes per graph
-        # vmax = nodes_per_graph_array.max()
-        # vmin = nodes_per_graph_array.min()
-        sc = ax.scatter(targets, predictions, c=nodes_per_graph_array, cmap='viridis', alpha=0.5, s=15, edgecolors='none', vmin=vmin, vmax=vmax)
+        sc = ax.scatter(targets_flat, predictions_flat, c=nodes_per_graph_array, cmap='viridis', alpha=0.5, s=15, edgecolors='none', vmin=vmin, vmax=vmax)
         cbar = plt.colorbar(sc)
         cbar.set_label('Number of Nodes per Graph')
-
-        # ax.scatter(targets, predictions, alpha=0.6, s=20, edgecolors='none')
         
         # Perfect prediction line (y=x)
-        min_val = min(targets.min(), predictions.min())
-        max_val = max(targets.max(), predictions.max())
+        min_val = min(targets_flat.min(), predictions_flat.min())
+        max_val = max(targets_flat.max(), predictions_flat.max())
         ax.plot([min_val, max_val], [min_val, max_val], 'r--', lw=2, label='Perfect Prediction')
         
         # Add metrics to plot

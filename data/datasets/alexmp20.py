@@ -19,10 +19,15 @@ except ImportError:
         except ImportError:
             default_cache = os.path.expanduser("~/.cache/huggingface")
             hf_cache_dir = default_cache
+        assert os.path.exists(hf_cache_dir), f"HuggingFace cache directory does not exist: {hf_cache_dir}"    
 
         hf_cache_dir = os.path.join(hf_cache_dir, subdir) # add subdir
 
-        assert os.path.exists(hf_cache_dir), f"HuggingFace cache directory does not exist: {hf_cache_dir}"
+        #check if subdir exists, if not create it
+        if not os.path.exists(hf_cache_dir):
+            os.makedirs(hf_cache_dir)
+
+        # assert os.path.exists(hf_cache_dir), f"HuggingFace cache directory does not exist: {hf_cache_dir}"
         # print(f"HuggingFace cache directory: {hf_cache_dir}")
         return hf_cache_dir
 
@@ -61,7 +66,8 @@ class AlexMP20_dataset(Dataset):
     splits = ['train', 'val', 'test', 'all']
 
     # name key used for saving preprocessed dataset
-    dataset_name = 'alexmp20' 
+    dataset_name = 'alexmp20'
+    hf_path = "Ty-Perez/AMP20"
 
     def __init__(self, 
                  split= 'train', 
@@ -87,14 +93,14 @@ class AlexMP20_dataset(Dataset):
     def load_hf_ds(self, split):
         if split == 'all':
             #load and join all three datasets
-            Alexmp20_ds = load_dataset("OMatG/Alex-MP-20")
+            Alexmp20_ds = load_dataset(self.hf_path)
             dataset = concatenate_datasets([
                     Alexmp20_ds['train'], 
                     Alexmp20_ds['val'], 
                     Alexmp20_ds['test']
                 ])
         else:
-            dataset = load_dataset("OMatG/Alex-MP-20", split=split)
+            dataset = load_dataset(self.hf_path, split=split)
 
         return dataset
 
@@ -153,8 +159,17 @@ class AlexMP20_dataset(Dataset):
     def _process_sample(self, raw_data):
         ####format property values
 
+        #NOTE: datasets loaded from huggingface are subject to changes.
+        # if you get an error based on keys not being found, print the keys of raw_data and update the formatting code below accordingly.
+
+        # #print all keys in raw data
+        # for key in raw_data.keys():
+        #     print(f"{key} : {raw_data[key]}")
+        # exit()
+
         #basic inputs
         raw_data['pos'] = torch.tensor(raw_data['pos'])
+        # raw_data['pos'] = torch.tensor(raw_data['positions'])
         raw_data['cell'] = torch.tensor(raw_data['cell'])
         raw_data['atomic_numbers'] = torch.tensor(raw_data['atomic_numbers'])
         raw_data['pbc'] = torch.tensor([bool(x) for x in raw_data['pbc']])

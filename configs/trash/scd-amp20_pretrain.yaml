@@ -17,7 +17,6 @@ num_workers: 6
 
 model_config: configs/model_configs/scd.yaml
 
-denoising_only: true 
 energy_weight: 0.0
 force_weight: 1.0
 ema_alpha_dy: 1.0
@@ -29,9 +28,7 @@ ngpus: -1
 num_nodes: 1
 redirect: false
 
-lr: 0.0005 # single node
-# lr: 0.0007 # #try 4 nodes?
-
+lr: 0.0005 
 lr_schedule: cosine
 lr_factor: 0.8
 lr_min: 1.0e-07
@@ -41,6 +38,7 @@ lr_cosine_length: 800000 # consider increasing
 num_epochs: 3000 
 num_steps: 800000 # consider increasing
 precision: 32
+droppath_warmup: False
 
 save_interval: 1
 test_interval: 1
@@ -54,24 +52,24 @@ pretraining: true
 self_cond: true
 weight_decay: 0.05
 
-momentum_update: False # Turn on 
+momentum_update: False 
 model_momentum: 0.996
 val_ema_model: False
+
+noise_scale: 0.04
+denoising_weight: 1.0 
+
+
+graph_cutoff: 5.0
+noise_in_loader: True
+allow_periodic: True
+
+#unit cell augmentations
+p_cell_repeat: 0.5
+cell_repeat_iters: 2
 
 # data agumentations
 random_rotate: False
 torsion_angle_std: 0.0
 max_bonds_rotated : 0
 p_invert : 0.0
-
-noise_scale: 0.04
-denoising_weight: 1.0 
-
-droppath_warmup: False
-
-### new
-graph_cutoff: 5.0
-noise_in_loader: True
-allow_periodic: True
-p_cell_repeat: 0.5
-cell_repeat_iters: 2

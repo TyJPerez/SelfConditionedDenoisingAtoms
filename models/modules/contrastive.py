@@ -3,6 +3,7 @@ import torch.nn.functional as F
 import torch.nn as nn
 import numpy as np
 
+#### NOTE: a Contrastive Loss was not used for the published model, but is available for testing and future work.
 
 def ctr_loss(q, k, tau):
     '''
@@ -18,27 +19,6 @@ def ctr_loss(q, k, tau):
     labels = torch.arange(N, device=q.device)
     loss = F.cross_entropy(logits / tau, labels)
     return 2*tau*loss
-
-# class ProjectionHead(nn.Module):
-#     def __init__(self, in_dim=256, hidden_dim=2048, out_dim=128):
-#         super().__init__()
-#         self.mlp = nn.Sequential(
-#             nn.Linear(in_dim, hidden_dim),
-#             nn.ReLU(inplace=True),
-#             nn.Linear(hidden_dim, out_dim)
-#         )
-#         self._reset_parameters()
-
-#     def _reset_parameters(self):
-#         for layer in self.mlp:
-#             if isinstance(layer, nn.Linear):
-#                 nn.init.xavier_uniform_(layer.weight)
-#                 if layer.bias is not None:
-#                     nn.init.zeros_(layer.bias)
-
-#     def forward(self, x):
-#         x = self.mlp(x)
-#         return F.normalize(x, dim=-1)  # Optional, improves contrastive performance
 
 class ContrastiveLoss(nn.Module):
     def __init__(self, 

@@ -1,0 +1,74 @@
+load_model: null
+log_dir: experiments/
+job_id: scd-s-n004_pcq
+
+## DATASET & LOADER INPUTS ###
+dataset: PCQM4MV2
+dataset_root: tmp/pcq
+dataset_arg : null
+train_size: 1000 
+
+test_size: 100
+val_size: 100
+batch_size: 32 #128
+inference_batch_size: 16
+seed: 1
+num_workers: 6
+
+model_config: configs/model_configs/scd.yaml
+
+energy_weight: 0.0
+force_weight: 1.0
+ema_alpha_dy: 1.0
+ema_alpha_y: 1.0
+
+distributed_backend: ddp
+# early_stopping_patience: 150
+ngpus: -1
+num_nodes: 1
+redirect: false
+
+lr: 0.0005 #
+# lr: 0.001 # slightly too high
+# lr: 0.002 # Too high
+# lr: 0.0004 # DEBUGGING #FIXME 
+
+lr_schedule: cosine
+lr_factor: 0.8
+lr_min: 1.0e-07
+lr_patience: 15
+lr_warmup_steps: 10000 
+lr_cosine_length: 800000 #400000
+num_epochs: 3000 # DEBUG
+num_steps: 1000 #400000 #DEBUG
+precision: 32
+
+save_interval: 1
+test_interval: 1
+
+splits: null
+standardize: false 
+
+wandb_notes: ""
+job_id: auto
+
+pretraining: true
+self_cond: true
+weight_decay: 0.05
+
+momentum_update: False
+model_momentum: 0.996
+val_ema_model: False
+
+# data agumentations
+random_rotate: True
+torsion_angle_std: 0.0
+max_bonds_rotated : 0
+p_invert : 0.0
+noise_scale: 0.04
+denoising_weight: 1.0 
+
+droppath_warmup: False
+
+parity_plot: False
+plot_interval: 1

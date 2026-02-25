@@ -4,19 +4,19 @@ import torch.nn as nn
 import torch.nn.functional as F
 from .utils import scatter
 
-class DropPath(nn.Module):
-    def __init__(self, drop_prob=0.0):
-        super().__init__()
-        self.drop_prob = drop_prob
+# class DropPath(nn.Module):
+#     def __init__(self, drop_prob=0.0):
+#         super().__init__()
+#         self.drop_prob = drop_prob
 
-    def forward(self, x):
-        if self.drop_prob == 0.0 or not self.training:
-            return x
-        keep_prob = 1 - self.drop_prob
-        shape = (x.shape[0],) + (1,) * (x.ndim - 1)
-        random_tensor = keep_prob + torch.rand(shape, dtype=x.dtype, device=x.device)
-        binary_mask = torch.floor(random_tensor)
-        return (x / keep_prob) * binary_mask
+#     def forward(self, x):
+#         if self.drop_prob == 0.0 or not self.training:
+#             return x
+#         keep_prob = 1 - self.drop_prob
+#         shape = (x.shape[0],) + (1,) * (x.ndim - 1)
+#         random_tensor = keep_prob + torch.rand(shape, dtype=x.dtype, device=x.device)
+#         binary_mask = torch.floor(random_tensor)
+#         return (x / keep_prob) * binary_mask
 
 class JointDropPath(nn.Module):
     # allows for a joint drop path on invariante (x) and equivariant (v) embeeddings
@@ -51,81 +51,79 @@ class DyT(nn.Module):
         x = F.tanh(self.norm_alpha * x) * self.norm_gamma + self.norm_beta
         return x
 
-class adaDyT(nn.Module):
-    # Layer norm but fast
-    def __init__(self, dim, init_alpha=0.2):
-        super().__init__()
-        self.alpha = nn.Parameter(torch.tensor(init_alpha))
+# class adaDyT(nn.Module):
+#     # Layer norm but fast
+#     def __init__(self, dim, init_alpha=0.2):
+#         super().__init__()
+#         self.alpha = nn.Parameter(torch.tensor(init_alpha))
     
-    def reset_parameters(self, init_alpha=0.2):
-        nn.init.constant_(self.alpha, init_alpha)
+#     def reset_parameters(self, init_alpha=0.2):
+#         nn.init.constant_(self.alpha, init_alpha)
 
-    def forward(self, x, scale, shift):
-        alpha = torch.clamp(self.alpha.abs(), min=1e-5)
-        gamma = F.tanh((1+scale))/alpha
-        x = F.tanh(alpha * x) * gamma + shift
-        return x
+#     def forward(self, x, scale, shift):
+#         alpha = torch.clamp(self.alpha.abs(), min=1e-5)
+#         gamma = F.tanh((1+scale))/alpha
+#         x = F.tanh(alpha * x) * gamma + shift
+#         return x
 
-
-
-class adaLN(nn.Module):
-    def __init__(self, dim, bias=True, init_alpha=0.2, norm_type='DyT'):
-        super().__init__()
+# class adaLN(nn.Module):
+#     def __init__(self, dim, bias=True, init_alpha=0.2, norm_type='DyT'):
+#         super().__init__()
         
-        norm_class = DyT if norm_type=='DyT' else nn.LayerNorm
+#         norm_class = DyT if norm_type=='DyT' else nn.LayerNorm
 
-        self.dim = dim
+#         self.dim = dim
 
-        self.x_norm = norm_class(dim)
-        self.c_norm = norm_class(dim)
-        self.fc = nn.Sequential(
-            nn.Linear(2*dim, dim, bias=bias),
-            nn.SiLU(),
-            norm_class(dim), 
-            nn.Linear(dim, 3 * dim, bias=bias)
-            )
+#         self.x_norm = norm_class(dim)
+#         self.c_norm = norm_class(dim)
+#         self.fc = nn.Sequential(
+#             nn.Linear(2*dim, dim, bias=bias),
+#             nn.SiLU(),
+#             norm_class(dim), 
+#             nn.Linear(dim, 3 * dim, bias=bias)
+#             )
         
-        self.x_modulate = adaDyT(dim, init_alpha=init_alpha)
-        # self.v_modulate = adaDyT(dim, init_alpha=init_alpha) #UNUSED: TODO delete this
-        self.alpha_x = nn.Parameter(torch.tensor(init_alpha))
-        self.init_params()
+#         self.x_modulate = adaDyT(dim, init_alpha=init_alpha)
+#         # self.v_modulate = adaDyT(dim, init_alpha=init_alpha) #UNUSED: TODO delete this
+#         self.alpha_x = nn.Parameter(torch.tensor(init_alpha))
+#         self.init_params()
     
-    def init_params(self, zero=False):
-        if zero:
-            nn.init.constant_(self.fc[-1].weight, 0)
-            nn.init.constant_(self.fc[-1].bias, 0)
-        else:
-            nn.init.xavier_uniform_(self.fc[-1].weight)
-            nn.init.constant_(self.fc[-1].bias, 0)
+#     def init_params(self, zero=False):
+#         if zero:
+#             nn.init.constant_(self.fc[-1].weight, 0)
+#             nn.init.constant_(self.fc[-1].bias, 0)
+#         else:
+#             nn.init.xavier_uniform_(self.fc[-1].weight)
+#             nn.init.constant_(self.fc[-1].bias, 0)
     
-    def reset_parameters(self, norm_type='DyT'):
-        norm_class = DyT if norm_type=='DyT' else nn.LayerNorm
-        dim = self.dim
-        self.x_norm = norm_class(dim)
-        self.c_norm = norm_class(dim)
-        self.fc[0].reset_parameters()
-        if isinstance(self.fc[2], (DyT, nn.LayerNorm)):
-            self.fc[2] = norm_class(dim)
-        else:
-            raise ValueError("Unexpected layer type in fc")
-        self.fc[3].reset_parameters()
-        self.x_modulate.reset_parameters()
-        nn.init.constant_(self.alpha_x, 0.2)
-        self.init_params()
+#     def reset_parameters(self, norm_type='DyT'):
+#         norm_class = DyT if norm_type=='DyT' else nn.LayerNorm
+#         dim = self.dim
+#         self.x_norm = norm_class(dim)
+#         self.c_norm = norm_class(dim)
+#         self.fc[0].reset_parameters()
+#         if isinstance(self.fc[2], (DyT, nn.LayerNorm)):
+#             self.fc[2] = norm_class(dim)
+#         else:
+#             raise ValueError("Unexpected layer type in fc")
+#         self.fc[3].reset_parameters()
+#         self.x_modulate.reset_parameters()
+#         nn.init.constant_(self.alpha_x, 0.2)
+#         self.init_params()
         
-    def forward(self, x, c):
+#     def forward(self, x, c):
 
-        if c is None:
-            return self.x_norm(x), 1.0
+#         if c is None:
+#             return self.x_norm(x), 1.0
 
-        x, c = self.x_norm(x), self.c_norm(c)
-        c = torch.cat([c, x], dim=-1)
-        shift_x, scale_x, gate_x = self.fc(c).chunk(3, dim=1)
+#         x, c = self.x_norm(x), self.c_norm(c)
+#         c = torch.cat([c, x], dim=-1)
+#         shift_x, scale_x, gate_x = self.fc(c).chunk(3, dim=1)
         
-        x = self.x_modulate(x, scale_x, shift_x)
-        gate_x = F.tanh(gate_x*self.alpha_x) 
+#         x = self.x_modulate(x, scale_x, shift_x)
+#         gate_x = F.tanh(gate_x*self.alpha_x) 
         
-        return x, gate_x
+#         return x, gate_x
 
 class adaDyT2(nn.Module):
     # Layer norm but fast
@@ -234,17 +232,15 @@ class DropCond(nn.Module):
         c = c[batch_idx]
         return c
 
+# class SubLayerNorm(torch.nn.Module):
+#     #wrapper for regular layer norm
+#     def __init__(self, dim=128, eps=1e-5, elementwise_affine=True):
+#         super().__init__()
+#         self.norm = torch.nn.LayerNorm(dim, eps, elementwise_affine)
 
-
-class SubLayerNorm(torch.nn.Module):
-    #wrapper for regular layer norm
-    def __init__(self, dim=128, eps=1e-5, elementwise_affine=True):
-        super().__init__()
-        self.norm = torch.nn.LayerNorm(dim, eps, elementwise_affine)
-
-    def forward(self, x, cond=None):
-        x = self.norm(x)
-        return x, 1.0
+#     def forward(self, x, cond=None):
+#         x = self.norm(x)
+#         return x, 1.0
 
 
 class ProjHead2(nn.Module): #
@@ -284,81 +280,3 @@ class ProjHead2(nn.Module): #
         x = self.post_agg_mlp(x)
         return x
 
-
-# class ProjHead(nn.Module): #
-#     """Projection head for self-conditioning embedding."""
-#     def __init__(self, emb_dim, agg='sum'):
-#         super().__init__()
-#         self.emb_dim = emb_dim
-#         self.agg = agg
-
-#         self.pre_proj = nn.Sequential(
-#             DyT(emb_dim, init_alpha=0.1),
-#             nn.Linear(emb_dim, emb_dim),
-#             nn.SiLU(),
-#             DyT(emb_dim, init_alpha=0.1),
-#             )
-#         self.post_agg_mlp = nn.Sequential(
-#             DyT(emb_dim, init_alpha=0.1),
-#             nn.Linear(emb_dim, emb_dim),
-#             nn.SiLU(),
-#             DyT(emb_dim, init_alpha=0.1),
-#             nn.Linear(emb_dim, emb_dim),
-#         )
-
-#         self.init_params()
-
-#     def init_params(self):
-#         nn.init.xavier_uniform_(self.pre_proj[1].weight)
-#         self.pre_proj[1].bias.data.fill_(0)
-#         nn.init.xavier_uniform_(self.post_agg_mlp[1].weight)
-#         self.post_agg_mlp[1].bias.data.fill_(0)
-#         nn.init.xavier_uniform_(self.post_agg_mlp[4].weight)
-#         self.post_agg_mlp[4].bias.data.fill_(0)
-
-#     def forward(self, x, batch):
-#         x = self.pre_proj(x) 
-#         x = scatter(x, batch, dim=0, reduce= self.agg) # sum pooled embeddings
-#         x = self.post_agg_mlp(x)
-#         return x
-
-
-class EdgeHead(nn.Module):
-    ''' 
-    a simple modele to create edges out of node features
-    used to predict torsional angles 
-
-    '''
-    def __init__(self, dim, out_dim):
-        super().__init__()
-        self.mlp = nn.Sequential(
-            nn.Linear(2 * dim, dim),
-            nn.SiLU(),
-            DyT(dim),
-            nn.Linear(dim, dim),
-            nn.SiLU(),
-            DyT(dim),
-            nn.Linear(dim, out_dim),
-            )
-
-    def edge_loss(self, pred_edge, target_edge):
-        #reshape pred_edge to the same shape as target_edge
-        pred_edge = pred_edge.view_as(target_edge)
-        mse_loss = F.mse_loss(pred_edge, target_edge)
-        return mse_loss
-
-    def forward(self, x, edge_index, edge_target=None):
-        x_src = x[edge_index[0]]
-        x_dst = x[edge_index[1]]
-
-        #formulate edge
-        edge = torch.cat([x_src, x_dst], dim=-1)
-
-        #pass through layers
-        edge = self.mlp(edge)
-
-        if edge_target is None:
-            return edge
-        else:
-            loss = self.edge_loss(edge, edge_target)
-            return loss

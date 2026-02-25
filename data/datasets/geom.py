@@ -31,11 +31,6 @@ def z_fmt(x):
 def get_file_name(idx):
     return f'mol_{idx}.pt'
 
-#define numerical formatting functions
-# self.num_fmt = lambda x: torch.tensor(x, dtype=torch.float32)
-# self.z_fmt = lambda x: torch.tensor(x, dtype=torch.long)
-# #define naming convention for saving files after preprocessing
-# self.get_file_name = lambda idx: f'mol_{idx}.pt'
 
 class GEOM_dataset(Dataset):
 
@@ -114,26 +109,6 @@ class GEOM_dataset(Dataset):
             self.data_summary = None
             self.data = self.get_hf_dataset()
             self.conf_count = []
-
-        # self.p_conf_count = os.path.join(self.data_root, 'conf_count.csv')
-        # self.data_path = os.path.join(root, self.dataset_name, self.split, 'data.pkl')
-
-        # #check if data.pkl exists
-        # if os.path.exists(self.data_path):
-        #     print(f'loading preprocessed data from {self.data_path}')
-        #     with open(self.data_path, 'rb') as f:
-        #         data_dict = pickle.load(f)
-        # else:
-        #     print('Warning: data.pkl not found, preprocessing dataset...')
-        #     print(f"Preprocessing dataset...")
-        #     self.preprocess()
-
-        #     print(f'loading preprocessed data from {self.data_path}')
-        #     with open(self.data_path, 'rb') as f:
-        #         data_dict = pickle.load(f)
-
-        # self.data = data_dict['data']
-        # self.conf_count = data_dict['conf_count']
 
         self.mol_index = np.arange(len(self.data))
         self.conf_index = np.arange(len(self.data))
@@ -329,13 +304,4 @@ if __name__ == '__main__':
     rand_idx = np.random.randint(0, len(test_dataset))
     sample = test_dataset[rand_idx]
     print(sample)
-    
-    # print(len(test_dataset))
-    # sample = test_dataset[10]
-    # print(sample)
-    
-    # from torch_geometric.loader import DataLoader as GDataLoader
-    # tg_loader = GDataLoader(test_dataset, batch_size=32, shuffle=True)
-
-    # batch = next(iter(tg_loader))
-    # print(batch)
+  

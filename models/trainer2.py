@@ -3,28 +3,15 @@ from torch.optim import AdamW
 from torch.optim.lr_scheduler import ReduceLROnPlateau, CosineAnnealingLR
 from torch.nn.functional import mse_loss, l1_loss
 from types import SimpleNamespace
-
 import torch.nn.functional as F
+import numpy as np
+from copy import deepcopy
 
 from pytorch_lightning import LightningModule
 
-# from torchmdnet.models.dimr_model import create_model, load_model
-
-# from models.ET_models import create_model, load_model
 from models.model_helper2 import create_model, get_model_checkpoint, load_model
-import numpy as np
-import os
-import sys
-from .utils.graphaug import GraphAugmenter # TODO
-
-import math
-from torch_geometric.nn import global_mean_pool
-from copy import deepcopy
-
+from .utils.graphaug import GraphAugmenter
 from models.modules.contrastive import ContrastiveLoss
-
-#batch clipping
-# from StructureCloud.utils.clipper import BatchClipper, TupleBatchClipper
 from data.batchclipper import BatchClipper, TupleBatchClipper
 
 from scipy.stats import spearmanr
@@ -42,8 +29,6 @@ def compute_corr(predictions, targets):
         "rmse": rmse,
         "pearson_corr": pearson_corr,
         "spearman_corr": spearman_corr,
-        # "p_pearson": p_pearson,
-        # "p_spearman": p_spearman  
     }
 
 class LTrainer(LightningModule):
@@ -61,15 +46,11 @@ class LTrainer(LightningModule):
 
         self.update_normalizer = True
         self.noise_scale = self.hparams.noise_scale
-        self.reg_noise_scale = 0.005 # noise applied for regularization on embedding structure
+        self.reg_noise_scale = 0.005  # Noise applied for regularization on embedding structure
 
-        #create variables to store model oututs if hparams.compute_corr is true
-        # self.store_outputs = {
-        #     'y_true': [],
-        #     'y_pred': [],
-        #     }
-        self.reset_stored_outputs() # create object to store outputs
-        self.store_outputs = False # weather or not to store outputs from eact step in self.step_outputs
+        self.ema_model = None
+        self.reset_stored_outputs()  # Create object to store outputs
+        self.store_outputs = False  # Whether or not to store outputs from each step in self.step_outputs
         if self.hparams.compute_corr:
             self.store_outputs = True
  
@@ -86,115 +67,67 @@ class LTrainer(LightningModule):
 
                 if not ckpt_epoch == _epoch:
                     print(f'WARNING: Checkpoint epoch {ckpt_epoch} does not match requested restart epoch {_epoch}. loaded step {ckpt_step}')
-                # assert ckpt_epoch == _epoch, f"Checkpoint epoch {ckpt_epoch} does not match requested restart epoch {_epoch}. loaded step {ckpt_step}"
-                if not ckpt_step-1 == _step:
-                    print(f'WARNING: Checkpoint step {ckpt_step} does not match expected step {_step}')
-
-                # assert ckpt_epoch == _epoch, f"Checkpoint epoch {ckpt_epoch} does not match requested restart epoch {self.hparams.load_epoch}"
-                # assert ckpt_step-1 == _step, f"Checkpoint step {ckpt_step} does not match expected step {_step}"
-                print(f"Restarting from checkpoint: {checkpoint_path}, epoch: {_epoch}, step: {_step}")
-
-                self.hparams.load_model = checkpoint_path
-
-                #load optimizer and scheduler state
-
-        self.ema_model = None 
+            if not ckpt_step-1 == _step:
+                print(f'WARNING: Checkpoint step {ckpt_step} does not match expected step {_step}')
+            print(f"Restarting from checkpoint: {checkpoint_path}, epoch: {_epoch}, step: {_step}")
+            
+            self.hparams.load_model = checkpoint_path
 
         if self.hparams.load_model:
-            self.model, ema_model, ckpt = load_model(self.hparams.load_model, 
-                                          args=self.hparams,
-                                        #   prior_model=prior_model,
-                                        #   restart=self.hparams.restart,
-                                        #   restart_epoch=self.hparams.load_epoch
-                                          )
+            self.model, ema_model, ckpt = load_model(
+                self.hparams.load_model,
+                args=self.hparams
+            )
             self.ema_model = ema_model
 
         elif self.hparams.pretrained_model:
+            self.model, ema_model, ckpt = load_model(
+                self.hparams.pretrained_model,
+                args=self.hparams,
+                mean=mean,
+                std=std
+            )
             
-            self.model, ema_model, ckpt = load_model(self.hparams.pretrained_model,
-                                           args=self.hparams, 
-                                           mean=mean, 
-                                           std=std,
-                                        #    prior_model=prior_model,
-                                        #    restart=self.hparams.restart,
-                                        #    restart_epoch=self.hparams.load_epoch
-                                           )
-            
-            if self.hparams.use_ema_model: # load pretrained ema model instead
+            if self.hparams.use_ema_model:  # Load pretrained ema model instead
                 self.model = ema_model
-
         else:
-            # assert not self.hparams.restart, 'Cannot restart model if no checkpoint is provided!'
             self.model = create_model(self.hparams, prior_model, mean=mean, std=std)
 
         if self.pretraining:
-            #freeze atom embedding layer
+            # Freeze atom embedding layer
             self.model.pretrain()
             self.hparams.weight_decay_on_head = False
         else:
-            #make sure no layers are frozen
+            # Make sure no layers are frozen
             self.model.finetune()
 
-        ## Determine Graph creation parameters
+        # Determine graph creation parameters
         if self.hparams.allow_periodic:
-            # use slower graph generation that handles periodic boundary conditions
-            self.model.rep_model.legacy = False # ensure periodic graph creation is on
+            # Use slower graph generation that handles periodic boundary conditions
+            self.model.rep_model.legacy = False
         else:
             if not self.hparams.noise_in_loader:
-                #default to torchnet-md optimized graph creation - note this ignores existing edges in batch
-                self.model.rep_model.legacy = True # use legacy graph creation
-                pass
+                # Default to torchnet-md optimized graph creation (ignores existing edges in batch)
+                self.model.rep_model.legacy = True
 
-        #set up droppath parameters
+        # Set up droppath parameters
         self.droppath_warmup = self.hparams.droppath_warmup
-        self.init_droppath = self.hparams.init_droppath #0.15
-        self.final_droppath = self.hparams.final_droppath #0.0
+        self.init_droppath = self.hparams.init_droppath
+        self.final_droppath = self.hparams.final_droppath
         self.droppath_warmup_steps = self.hparams.lr_warmup_steps + 2000
-        self.update_droppath(step=self.global_step) #initialize droppath - self.droppath_warmup musy be on for this to alter the droppath rate
+        self.update_droppath(step=self.global_step)
 
-        ##debug:
-        #print model lecacy flag
-        # print(f'--- Model graph legacy flag: {self.model.rep_model.legacy} ---')
-
-        # if self.hparams.noise_in_loader:
-        #     # both noise addition and graph creation will be handled in the data loader
-        #     self.noise_in_loader = True
-            #sill skip noise addition in batch
-
-        #DEBUG TESTING
-        # mod_head_reduce_op = self.model.scalar_head.reduce_op
-        # print(f'--- Model head reduce op: {mod_head_reduce_op} ---')
-
-
-        #check if model has derivative turned on
+        # Check if model has derivative turned on
         if self.hparams.derivative is None:
             self.hparams.derivative = self.model.derivative
-
-            if self.hparams.derivative is None: # ensure that derivative is a bool
+            if self.hparams.derivative is None:
                 self.hparams.derivative = False
 
-        # self.update_droppath(step=self.global_step) #initialize droppath - self.droppath_warmup musy be on for this to alter the droppath rate
-        
-        ### DEBUG: THIS IS A PROBLEM FOR RELOADED MODELS ###
-        # if self.droppath_warmup: #FIXME - this looks like a problem for reloaded models
-        #     # print(f'--- Using droppath with warmup to {self.init_droppath} over {self.droppath_warmup_steps} steps ---')
-        #     rep_model = self.model.rep_model
-        #     for layer in rep_model.attention_layers:
-        #         layer.set_droppath(self.init_droppath)
-
-        # print(f'----- DEBUG: global step: {self.global_step } -----')
-        # # self.update_droppath()
-
-        # dp_stat = self.model.rep_model.attention_layers[0].joint_droppath.drop_prob
-        # print(f"----- DEBUG: Current droppath rate: {dp_stat} -----")
-        # print(f'----- DEBUG: model drop path init {self.init_droppath} over {self.droppath_warmup_steps} steps ---')
-        # print(f'----- DEBUG: trainer global step: {self.trainer.global_step } -----')
-
-        # initialize exponential smoothing
+        # Initialize exponential smoothing
         self.ema = None
         self._reset_ema_dict()
 
-        # initialize loss collection
+        # Initialize loss collection
         self.losses = None
         self._reset_losses_dict()
 
@@ -203,21 +136,20 @@ class LTrainer(LightningModule):
         self.noise_steps = 10000
 
         self.aug_batch = GraphAugmenter(
-            rand_translate=0.0, #5.0, #5.0,# if random_translations else 0.0,
-            rand_rotate=0.0, #2*np.pi,# if random_rotations else 0.0,
-
-            pos_shear_scale=0.0,  #0.04,
-            pos_noise_scale=self.noise_scale,# if add_node_noise else 0.0, #FIXMEL temporarilyturned high
-            pos_noise_ratio=1.0,#0.50, # if add_node_noise else 0.0,
-            noise_type='gaussian', # or 'uniform'
-            joint_mask=False, # mask node id for all noised nodes
-
-            z_mask_id = 0, #mask is padding zeros
-            z_mask_ratio=0.0, #0.75, #0.75,
-            z_id_ignore_mask = 2,
+            rand_translate=0.0,
+            rand_rotate=0.0,
+            pos_shear_scale=0.0,
+            pos_noise_scale=self.noise_scale,
+            pos_noise_ratio=1.0,
+            noise_type='gaussian',
+            joint_mask=False,
+            z_mask_id=0,
+            z_mask_ratio=0.0,
+            z_id_ignore_mask=2,
             center=True,
             recenter=False,
-            device=None)
+            device=None
+        )
         
         #create a batch clipper
         max_nodes = self.hparams.max_nodes_per_batch
@@ -374,7 +306,6 @@ class LTrainer(LightningModule):
                 lr=self.hparams.lr,
                 betas=betas, # keep betas default
             )
-
             
         else:
             print('-- Using grouped weights for optimization --')
@@ -519,24 +450,9 @@ class LTrainer(LightningModule):
 
         return loss
     
-    # def scd_forward(self, batch, reg_noise_scale=0.0):
-    
-    #     #### create two views, clean and corrupted ####
-    #     x1, x1_mask, aug_dict1 = self.aug_batch(batch)
-
-    #     ### add regularization noise to clean sample ###
-    #     if reg_noise_scale > 0.0:
-    #         x1.pos = x1.pos + torch.randn_like(x1.pos)*reg_noise_scale
-
-    #     ### first pass to get embedding of clean structure ###
-    #     out_clean = self.model(x1.z, x1.pos, x1.batch, cond=None)
-        
-    #     ### pass embedding of clean structure as condition to corrupted structure ###
-    #     out_corrupted = self.model(x1_mask.z, x1_mask.pos, x1_mask.batch, cond=out_clean['mol_emb'])
-        
-    #     return out_clean, out_corrupted, aug_dict1, x1, x1_mask
-    
     def force_denoise(self, batch, reg_noise_scale=0.0):
+        ### This function is only used for the MD17 benhcmark to match previous work
+
         #### create two views, clean and corrupted ####
         x1, x1_mask, aug_dict1 = self.aug_batch(batch)
 
@@ -553,84 +469,8 @@ class LTrainer(LightningModule):
 
         return out_clean, out_corrupted, aug_dict1, x1, x1_mask
     
-    # def scd_FCE(self, batch, loss_fn, stage):
-    #     assert stage == 'train', 'scd_FCE only implemented for training stage'
-       
-    #     ### first pass to get embedding of clean structure ###
-    #     out_basic = self.model(batch.z, batch.pos, batch.batch, cond=None)
-    #     pred = out_basic['y']
-    #     # noise_pred = out_basic.get('noise_pred', None)
-    #     deriv = out_basic.get('dy', None)
 
-    #     #### computed derivative based force
-    #     loss_dy = loss_fn(deriv, batch.dy)
-    #     if self.hparams.ema_alpha_dy < 1:
-    #         if self.ema[stage + "_dy"] is None:
-    #             self.ema[stage + "_dy"] = loss_dy.detach()
-    #         # apply exponential smoothing over batches to dy
-    #         loss_dy = (
-    #             self.hparams.ema_alpha_dy * loss_dy
-    #             + (1 - self.hparams.ema_alpha_dy) * self.ema[stage + "_dy"]
-    #         )
-    #         self.ema[stage + "_dy"] = loss_dy.detach()
-    #         if self.hparams.force_weight > 0:
-    #             self.losses[stage + "_dy"].append(loss_dy.detach())
-        
-    #     #### Compute energy prediction 
-    #     loss_y = loss_fn(pred, batch.y)
-    #     loss_y_l1 = F.l1_loss(pred.detach(), batch.y).item() # for logging only
-    #     self.losses[stage + "_y_l1"].append(loss_y_l1)
-
-    #     if self.hparams.ema_alpha_y < 1:
-    #         if self.ema[stage + "_y"] is None:
-    #             self.ema[stage + "_y"] = loss_y.detach()
-    #         # apply exponential smoothing over batches to y
-    #         loss_y = ( self.hparams.ema_alpha_y * loss_y + (1 - self.hparams.ema_alpha_y) * self.ema[stage + "_y"])
-    #         self.ema[stage + "_y"] = loss_y.detach()
-
-    #     if self.hparams.energy_weight > 0:
-    #         self.losses[stage + "_y"].append(loss_y.detach())
-
-
-    #     ### make energy conditioned foward force prediction ###
-    #     energy = batch.y
-    #     eng_emb = emb_scalar(self.model.emb_dim, energy)
-    #     out_corrupted = self.model(batch.z, batch.pos, batch.batch, cond=eng_emb)
-
-    #     return out_clean, out_corrupted, aug_dict1, x1, x1_mask
-
-    # def ema_matching_fwd(self, batch, stage):
-    #     #contrastive loss between model and ema model embeddings
-    #     assert self.ema_model is not None, 'EMA model not initialized!'
-
-    #     extra_args = {'return_atom_outputs': True, 'return_atom_embs': True}
-
-    #     out_basic = self.model( batch.z, batch.pos, batch.batch, cond=None,
-    #                            **extra_args)
-
-    #     out_ema = self.ema_model(batch.z, batch.pos, batch.batch, cond=None,
-    #                             **extra_args)
-
-    #     # print('atom outputs', out_basic['atom_outputs'].shape)
-        
-    #     # node_align_loss = F.mse_loss(out_basic['atom_outputs'], out_ema['atom_outputs'].detach())
-    #     # dy_align_loss = F.mse_loss(out_basic['dy'], out_ema['dy'].detach())
-
-    #     # atom_emb_align_loss = F.mse_loss(out_basic['atom_embs'], out_ema['atom_embs'].detach())
-    #     mol_emb_align_loss = F.mse_loss(out_basic['mol_emb'], out_ema['mol_emb'].detach())
-
-    #     node_align_loss = mol_emb_align_loss
-        
-    #     # print('node_align_loss', node_align_loss.item())
-
-    #     # self.losses[stage + "_ema_align_loss"].append(node_align_loss.detach())
-
-    #     return out_basic, node_align_loss
-
-    # def fwd_forces(self, batch, loss_fn, stage):
-    #     # out_basic = self.model(batch.z, batch.pos, batch.batch, cond=None,)
-
-    def scd_step(self, batch, loss_fn, stage): # TODO: rename this function to scd_ssl_step
+    def scd_step(self, batch, loss_fn, stage, return_outputs=False): # TODO: rename this function to scd_ssl_step
         
         # --------------------- scd forward ---------------------
         #remove noise if already added
@@ -735,6 +575,12 @@ class LTrainer(LightningModule):
 
             self.log_dict(train_metrics, sync_dist=True)
         
+        if return_outputs:
+            # For plotting/eval: construct output_dict from s_out
+            output_dict = s_out
+            x1_mask.noise = target_noise
+            return output_dict, x1_mask
+        
         return loss
 
     def step(self, batch, loss_fn, stage, return_outputs=False):
@@ -752,7 +598,7 @@ class LTrainer(LightningModule):
         if self.pretraining: ####  do denoising only pretraining step
             if self.self_cond:
                 # do Self conditioned denoising pass
-                loss = self.scd_step(batch, loss_fn, stage)
+                loss = self.scd_step(batch, loss_fn, stage, return_outputs=return_outputs)
                 return loss
             
             else:# Do regular denoising pass
@@ -944,9 +790,6 @@ class LTrainer(LightningModule):
                     self.losses[stage + "_dy_direct"].append(loss_dy_direct.detach())
                     self.losses[stage + "_dy_direct_l1"].append(loss_dy_direct_l1)
 
-                # combine both losses
-                # loss_dy = loss_dy + loss_dy_direct
-
 
         if "y" in batch:
             if (noise_pred is not None) and not denoising_is_on:
@@ -1051,30 +894,17 @@ class LTrainer(LightningModule):
                     train_metrics['pos_noise'] = self.aug_batch.pos_noise_scale
                 else:
                     ## TODO
+                    #Logging pos_noise not implemented for noise_in_loader yet!
                     pass
-            # if destress_is_on:
-            #     train_metrics['stress_loss'] = loss_stress.item()
-            #     train_metrics['shear_pos_mae'] = shear_pos_mae.item()
+            
 
             self.log_dict(train_metrics, sync_dist=True)
-            # self.log_dict(train_metrics, sync_dist=True, on_step=True, on_epoch=False)
         
         elif stage == 'val' or stage == 'test':
             
             val_metrics = {k + "_per_step": v[-1] for k, v in self.losses.items() if (k.startswith(stage) and len(v) > 0)}
             val_metrics['step'] = self.trainer.global_step
         
-            # val_loss = loss.detach()
-            # self.losses[f'{stage}_loss'].append(val_loss)
-
-            # if "y" in batch:
-            #     loss_y_l1 = F.l1_loss(pred.detach(), batch.y).item() # for logging only
-            #     self.losses[stage + "_y_l1"].append(loss_y_l1)
-            #     # train_metrics = {k + "_per_step": v[-1] for k, v in self.losses.items() if (k.startswith("train") and len(v) > 0)}
-            #     val_metrics = {}
-            #     val_metrics[f'{stage}_loss_y_l1_per_step'] = loss_y_l1
-            #     val_metrics['lr_per_step'] = self.trainer.optimizers[0].param_groups[0]["lr"]
-            #     val_metrics['step'] = self.trainer.global_step   
             self.log_dict(val_metrics, sync_dist=True)
             pass
 
@@ -1100,8 +930,6 @@ class LTrainer(LightningModule):
         else:
             global_step = self.global_step
 
-        
-        
         if global_step < self.droppath_warmup_steps:
             new_droppath = self.init_droppath - (self.init_droppath - self.final_droppath) * (global_step / self.droppath_warmup_steps)
             #ensure drop path is within bounds
@@ -1147,35 +975,11 @@ class LTrainer(LightningModule):
         if self.droppath_warmup:
             self.update_droppath()
 
-        # if self.pretraining:
-        #     #ema update the teacher
-        #     self.teacher_model.ema_update(self.model, self.C_update, l=self.l, m_mol=0.9)
-        #     #TODO: create momenum and temperture schedules
-
-        #     #STEP AUGMENTATION SCHEDULER
-        #     new_noise = cosine_schedule(
-        #         start_value = self.noise_init,
-        #         end_value = self.noise_final,
-        #         total_steps = self.noise_steps,
-        #         current_step = self.trainer.global_step,
-        #         )
-        #     self.aug_batch.pos_noise_scale = new_noise
-
-        #     #STEP MOMENTUM VALUE:
-        #     self.l = cosine_schedule(
-        #         start_value = self.init_momentum,
-        #         end_value = self.final_momentum,
-        #         total_steps = self.momentum_steps,
-        #         current_step = self.trainer.global_step,
-        #         )
-
         optimizer.zero_grad()
 
     def on_train_epoch_end(self):
         # This method is intentionally left empty as reset_val_dataloader is not available in PyTorch Lightning 2.x
         # Lightning automatically handles dataloader management
-
-        
         if self.hparams.compute_corr:
             self.log_allcorr()
         self.reset_stored_outputs()
@@ -1183,7 +987,6 @@ class LTrainer(LightningModule):
         #clear batch clipper cache at epoch end
         self.batch_clipper.reset()
 
-        pass
 
     def save_best_checkpoint(self):
         #check if self has attribute trainer
@@ -1194,21 +997,6 @@ class LTrainer(LightningModule):
             print("--- WARNING: Trainer is None, cannot save best checkpoint.")
             return
             
-            ###
-            # model_checkpoint_call_found = False
-            #     for callback in trainer.callbacks:
-            #         if isinstance(callback, ModelCheckpoint):
-            #             # callback._save_last_checkpoint(tmp_path)
-                        
-            #             callback._save_topk_checkpoint(trainer, trainer.logged_metrics)
-            #             # Also save last checkpoint if enabled
-            #             if callback.save_last:
-            #                 callback._save_last_checkpoint(trainer, trainer.logged_metrics)
-
-            #             model_checkpoint_call_found = True
-
-        pass
-
     def on_validation_epoch_end(self):
 
         if self.hparams.compute_corr:
@@ -1230,8 +1018,6 @@ class LTrainer(LightningModule):
             val_loss = torch.stack(self.losses["val"]).mean()
             self.log("val_loss", val_loss, sync_dist=True)
             result_dict["val_loss"] = val_loss
-
-            # result_dict["val_loss"] = torch.stack(self.losses["val"]).mean()
 
         # add test loss if available
         if len(self.losses["test"]) > 0:

@@ -13,7 +13,6 @@ import sys
 ### MUST IMPORT ALL POSSIBLE MODEL ARCHITECTURE CLASSES TO BE CALLABLE
 ### BY CREATE
 from models.ET_models.scd_model import ET, CET, CFrad, ETFrad
-
 from models.ET_models import priors
 
 from copy import deepcopy

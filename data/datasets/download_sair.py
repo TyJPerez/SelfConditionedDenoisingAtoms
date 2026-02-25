@@ -1,10 +1,15 @@
 
 ##### 
-# This script exists to download, extract and preprocess the SAIR dataset from Hugging Face
-# for simple use
-# WARNING: The SAIR dataset contains over 2TB of data, after preprocessing results in ~1M files
-# we suggest running this script on as a job on your chosen cluster.
 
+'''
+WARNING: The SAIR dataset contains over 2TB of data, after preprocessing results in ~1M files
+we suggest running this script as a job on your chosen cluster.
+
+This script exists to download, extract and preprocess the SAIR dataset from Hugging Face
+for use
+
+
+'''
 import os
 import tarfile
 from huggingface_hub import hf_hub_url, list_repo_files, hf_hub_download

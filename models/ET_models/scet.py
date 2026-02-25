@@ -1,4 +1,7 @@
 """
+
+This is a modified version of the original ET implementation, 
+with added conditioning input.
 Equivariant Transformer implementation.
 Extracted from torchmd-net for standalone use.
 
@@ -9,9 +12,6 @@ P. Tholke and G. de Fabritiis. ICLR 2022.
 from typing import Optional, Tuple
 import torch
 from torch import Tensor, nn
-
-# import data object from torch_geometric.data import Data
-from torch_geometric.data import Data
 
 
 from .utils import (
@@ -26,8 +26,7 @@ from .utils import (
 from .extensions import EXTENSIONS_AVAILABLE
 
 from models.ET_models.graph_utils.compute import GraphGenerator
-from models.modules.conditioning import adaLN2, DropPath, DropCond, DyT, JointDropPath
-
+from models.modules.conditioning import adaLN2, DropCond, DyT, JointDropPath
 
 class CondEquivMultiHeadAttention(nn.Module):
     """Equivariant multi-head attention layer."""
@@ -58,13 +57,11 @@ class CondEquivMultiHeadAttention(nn.Module):
         self.num_heads = num_heads
         self.hidden_channels = hidden_channels
         self.head_dim = hidden_channels // num_heads
-        # self.layernorm = nn.LayerNorm(hidden_channels, dtype=dtype)
 
         #### MODIFICATIONS FOR SCD ####
         self.conditional_ln = adaLN2(dim=hidden_channels)
         self.joint_droppath = JointDropPath(drop_prob=p_droppath)
         self.vec_norm = DyT(hidden_channels) # added for stability
-        # self.vec_norm = nn.LayerNorm(hidden_channels, dtype=dtype) # added for stability
         self.vec_prenorm = vec_prenorm 
         #### MODIFICATIONS FOR SCD ####
 

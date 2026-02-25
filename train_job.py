@@ -42,105 +42,105 @@ import shutil
 
 # from models.ET_models.priors import Atomref
 
-class LimitRun(Callback):
-    """
-    Stop *this run only* after `minutes` from start (no accumulation across restarts).
-    Saves a checkpoint before stopping so the next job can resume.
-    """
+# class LimitRun(Callback):
+#     """
+#     Stop *this run only* after `minutes` from start (no accumulation across restarts).
+#     Saves a checkpoint before stopping so the next job can resume.
+#     """
 
-    def __init__(self, 
-                 minutes : int = None, 
-                 max_epochs_per_run: int = None,
-                 out_dir: str = None, 
-                 buffer_sec: int = 30,
-                  ):
-        super().__init__()
-        self.minutes = minutes
-        self.out_dir = out_dir
-        self.buffer_sec = buffer_sec
-        self.max_epochs_per_run = max_epochs_per_run
-        self._t0 = None
-        self._start_epoch = None
+#     def __init__(self, 
+#                  minutes : int = None, 
+#                  max_epochs_per_run: int = None,
+#                  out_dir: str = None, 
+#                  buffer_sec: int = 30,
+#                   ):
+#         super().__init__()
+#         self.minutes = minutes
+#         self.out_dir = out_dir
+#         self.buffer_sec = buffer_sec
+#         self.max_epochs_per_run = max_epochs_per_run
+#         self._t0 = None
+#         self._start_epoch = None
 
-    def on_fit_start(self, trainer, pl_module):
-        # This is called before checkpoint loading
-        self._t0 = time.time()
-        os.makedirs(os.path.join(self.out_dir), exist_ok=True)
+#     def on_fit_start(self, trainer, pl_module):
+#         # This is called before checkpoint loading
+#         self._t0 = time.time()
+#         os.makedirs(os.path.join(self.out_dir), exist_ok=True)
 
-    def on_train_start(self, trainer, pl_module):
-        # This is called AFTER checkpoint loading
-        self._start_epoch = trainer.current_epoch
+#     def on_train_start(self, trainer, pl_module):
+#         # This is called AFTER checkpoint loading
+#         self._start_epoch = trainer.current_epoch
 
-        current_steps = trainer.global_step
-        if current_steps < 1:
-            self._start_epoch = -1 
+#         current_steps = trainer.global_step
+#         if current_steps < 1:
+#             self._start_epoch = -1 
 
-        # Print what limits are active
-        limits = []
-        if self.minutes is not None:
-            limits.append(f"{self.minutes} minutes")
-        if self.max_epochs_per_run is not None:
-            limits.append(f"{self.max_epochs_per_run} epochs")
+#         # Print what limits are active
+#         limits = []
+#         if self.minutes is not None:
+#             limits.append(f"{self.minutes} minutes")
+#         if self.max_epochs_per_run is not None:
+#             limits.append(f"{self.max_epochs_per_run} epochs")
 
-        if len(limits) > 0 and trainer.global_rank == 0:
-            print(f"Will stop this run after: {' OR '.join(limits)} from start epoch {self._start_epoch}")
+#         if len(limits) > 0 and trainer.global_rank == 0:
+#             print(f"Will stop this run after: {' OR '.join(limits)} from start epoch {self._start_epoch}")
     
-    def get_filename(self, trainer):
-        step = trainer.global_step
-        epoch = trainer.current_epoch
+#     def get_filename(self, trainer):
+#         step = trainer.global_step
+#         epoch = trainer.current_epoch
         
-        filename = f"step={step}-epoch={epoch}.stop_ckpt"
-        return filename
+#         filename = f"step={step}-epoch={epoch}.stop_ckpt"
+#         return filename
 
-    def _save_checkpoint_and_stop(self, trainer, reason="time limit"):
-        """Helper method to save checkpoint and stop training"""
+#     def _save_checkpoint_and_stop(self, trainer, reason="time limit"):
+#         """Helper method to save checkpoint and stop training"""
         
-        ckpt_dir = os.path.join(self.out_dir)
-        tmp_path = os.path.join(ckpt_dir, self.get_filename(trainer))
-        # trainer.save_checkpoint(tmp_path)
+#         ckpt_dir = os.path.join(self.out_dir)
+#         tmp_path = os.path.join(ckpt_dir, self.get_filename(trainer))
+#         # trainer.save_checkpoint(tmp_path)
 
-        # if trainer.global_rank == 0:  # Only rank 0 saves
-            # Optionally update last.ckpt
-            # last_path = os.path.join(ckpt_dir, "last.ckpt")
-            # shutil.copy2(tmp_path, last_path)
+#         # if trainer.global_rank == 0:  # Only rank 0 saves
+#             # Optionally update last.ckpt
+#             # last_path = os.path.join(ckpt_dir, "last.ckpt")
+#             # shutil.copy2(tmp_path, last_path)
 
-        model_checkpoint_call_found = False
-        for callback in trainer.callbacks:
-            if isinstance(callback, ModelCheckpoint):
-                # callback._save_last_checkpoint(tmp_path)
+#         model_checkpoint_call_found = False
+#         for callback in trainer.callbacks:
+#             if isinstance(callback, ModelCheckpoint):
+#                 # callback._save_last_checkpoint(tmp_path)
                 
-                callback._save_topk_checkpoint(trainer, trainer.logged_metrics)
-                # Also save last checkpoint if enabled
-                if callback.save_last:
-                    callback._save_last_checkpoint(trainer, trainer.logged_metrics)
+#                 callback._save_topk_checkpoint(trainer, trainer.logged_metrics)
+#                 # Also save last checkpoint if enabled
+#                 if callback.save_last:
+#                     callback._save_last_checkpoint(trainer, trainer.logged_metrics)
 
-                model_checkpoint_call_found = True
-        if not model_checkpoint_call_found:
-            print('WARNING: no model checkpoint callback found!! check point was not saved. no manual save process set up')
+#                 model_checkpoint_call_found = True
+#         if not model_checkpoint_call_found:
+#             print('WARNING: no model checkpoint callback found!! check point was not saved. no manual save process set up')
         
-        print(f"--- STOPING TRAINING: due to {reason}. Saved checkpoint: {tmp_path}")
+#         print(f"--- STOPING TRAINING: due to {reason}. Saved checkpoint: {tmp_path}")
         
-        trainer.should_stop = True  # graceful stop at the next safe point
+#         trainer.should_stop = True  # graceful stop at the next safe point
     
-    def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
-        """Check time limit during training"""
-        if self._t0 is None or self.minutes is None:
-            return
+#     def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
+#         """Check time limit during training"""
+#         if self._t0 is None or self.minutes is None:
+#             return
             
-        elapsed = time.time() - self._t0
-        limit = max(0, 60 * self.minutes - self.buffer_sec)
-        if elapsed >= limit:
-            self._save_checkpoint_and_stop(trainer, "time limit")
+#         elapsed = time.time() - self._t0
+#         limit = max(0, 60 * self.minutes - self.buffer_sec)
+#         if elapsed >= limit:
+#             self._save_checkpoint_and_stop(trainer, "time limit")
     
-    def on_train_epoch_end(self, trainer, pl_module):
-        """Check epoch limit at the end of each epoch"""
-        if self._start_epoch is None or self.max_epochs_per_run is None:
-            return
+#     def on_train_epoch_end(self, trainer, pl_module):
+#         """Check epoch limit at the end of each epoch"""
+#         if self._start_epoch is None or self.max_epochs_per_run is None:
+#             return
             
-        epochs_completed = trainer.current_epoch - self._start_epoch #+ 1
-        # print(f"Completed epochs: {epochs_completed}, current epoch {trainer.current_epoch}, start epoch, {self._start_epoch}")
-        if epochs_completed >= self.max_epochs_per_run:
-            self._save_checkpoint_and_stop(trainer, f"epoch limit ({epochs_completed} epochs completed)")
+#         epochs_completed = trainer.current_epoch - self._start_epoch #+ 1
+#         # print(f"Completed epochs: {epochs_completed}, current epoch {trainer.current_epoch}, start epoch, {self._start_epoch}")
+#         if epochs_completed >= self.max_epochs_per_run:
+#             self._save_checkpoint_and_stop(trainer, f"epoch limit ({epochs_completed} epochs completed)")
     
     # def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
     #     # Check elapsed wall time from the start of *this* run
@@ -392,7 +392,6 @@ def main():
     
     # Optimize for Tensor Cores on A100 GPUs
     gpu_name = torch.cuda.get_device_name(0)
-    
     if args.pretraining:
         if 'A100' in gpu_name or 'H100' in gpu_name:
             torch.set_float32_matmul_precision('medium')
