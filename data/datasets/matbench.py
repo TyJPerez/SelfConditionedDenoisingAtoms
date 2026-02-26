@@ -9,11 +9,12 @@ from pymatgen.core import Structure
 #TODO: write replacement class for when pymatgen is not available
 
 from StructureCloud.Datasets.utils import hf_download_file
+   
 
 def get_matbench_data_path(task_name: str) -> str:
     ''' download and return path to matbench data for a given task name '''
     path = hf_download_file(
-        repo_id = 'Ty-Perez/matbench',
+        repo_id = 'Ty-Perez/matbench_properties',
         filename = f'{task_name}.tar.gz',
     )
     return str(path)

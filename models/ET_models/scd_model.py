@@ -5,26 +5,13 @@ Wrapper class for Equivariant Transformer that outputs both invariant and equiva
 import torch
 from torch import nn, Tensor
 from typing import Optional, Tuple, Dict, List
-import torch.nn.functional as F
-
-from .output_modules import EquivariantScalar , EquivariantVector
-# from .utils import scatter
 from torch.autograd import grad
 
 from . import priors
-
-# from .cond_et import ConditionalET
+from .output_modules import EquivariantScalar, EquivariantVector
 from .scet import ConditionalET
 from .equivariant_transformer import EquivariantTransformer
 from models.modules.conditioning import ProjHead2
-# from models.modules.clsnodes import CLSHead
-
-from .frad.torchmd_frad_scd import CondFrad
-from .frad.torchmd_frad import FradOriginal
-
-# import re
-# import warnings
-# import yaml
 
 class BaseModel(nn.Module):
     """
@@ -37,15 +24,13 @@ class BaseModel(nn.Module):
         derivative=False,
         activation: str = "silu",
         aggregation: str = "sum",
-        emb_agg : str = "sum",
-        head_agg : str = "sum",
+        emb_agg: str = "sum",
+        head_agg: str = "sum",
         dtype: torch.dtype = torch.float32,
-        prior_model : Optional[nn.Module] = None,
+        prior_model: Optional[nn.Module] = None,
         mean=None,
         std=None,
-        # dy_mean=None,
-        # dy_std=None,
-        add_head_to_pred = False, # add embedding head prediction to final y prediction
+        add_head_to_pred=False,  # add embedding head prediction to final y prediction
         
     ):
         super().__init__()
@@ -66,11 +51,6 @@ class BaseModel(nn.Module):
         self.register_buffer("mean", mean)
         std = torch.scalar_tensor(1) if std is None else std
         self.register_buffer("std", std)
-
-        # dy_mean = torch.scalar_tensor(0) if dy_mean is None else dy_mean
-        # self.register_buffer("dy_mean", dy_mean)
-        # dy_std = torch.scalar_tensor(1) if dy_std is None else dy_std
-        # self.register_buffer("dy_std", dy_std)
 
         self.noise_head = EquivariantVector(
             hidden_channels=emb_dim,
@@ -112,8 +92,6 @@ class BaseModel(nn.Module):
             param.requires_grad = True
     
     def reset_head(self):
-        # self.noise_head.reset_parameters()
-        # self.embedding_head.reset_parameters()
         self.scalar_head.reset_parameters()
         print('--- SCALAR HEAD RESET ---')
 
@@ -144,11 +122,10 @@ class BaseModel(nn.Module):
 
         print(f'--- CONDITIONAL LAYER NORMS RESET TO {norm_type} ---')
 
-    def get_parameter_groups(self, weight_decay = 0.01, weight_decay_on_head=False):
+    def get_parameter_groups(self, weight_decay=0.01, weight_decay_on_head=False):
 
-        no_wd_flags = ['bias', 'norm','alpha']
+        no_wd_flags = ['bias', 'norm', 'alpha']
         no_wd_modules = ['mask_token',
-                        # 'scalar_head',  #TODO: test is removing weight decay from head helps or hurts
                         'prior_model', 
                         '.embedding.',
                         'neighbor_embedding_module',
@@ -176,8 +153,8 @@ class BaseModel(nn.Module):
                 allow_wd_names.append(name)
 
         param_groups = [
-            {'params' : allow_wd_params, 'weight_decay': weight_decay, 'name': f'allow_wd'},
-            {'params' : no_wd_params, 'weight_decay': 0.00, 'name': f'no_wd'},
+            {'params': allow_wd_params, 'weight_decay': weight_decay, 'name': 'allow_wd'},
+            {'params': no_wd_params, 'weight_decay': 0.00, 'name': 'no_wd'},
         ]
 
         return param_groups
@@ -311,22 +288,11 @@ class BaseModel(nn.Module):
 
         #Compute embeddings
         if self.add_head_to_pred:
-             output_dict['mol_emb'] = self.embedding_head(x.detach(), batch)
+            output_dict['mol_emb'] = self.embedding_head(x.detach(), batch)
         else:
             output_dict['mol_emb'] = self.embedding_head(x, batch)
 
-        # output_dict['mol_emb'] = self.embedding_head(x, batch)
-
         ####### predict y
-
-        #TEMPORARY TESTING
-        # if output_dict['mol_emb'] is not None:
-        #     emb_scale = output_dict['mol_emb'] #.mean(dim=-1, keepdim=True) # [B,1]
-        #     # x = x * emb_scale[batch] # expand to node dim
-        #     x = (x + emb_scale[batch].detach()) #/2 # expand to node dim
-
-            # gate x
-            # x = emb_scale[batch]*F.sigmoid(x)
 
         if kwargs.get("return_atom_embs", False):
             output_dict["atom_embs"] = x
@@ -339,10 +305,6 @@ class BaseModel(nn.Module):
             atom_mask = kwargs.get("atom_mask") # [N,]
             x = x * atom_mask.unsqueeze(-1) # [N, F] * [N, 1]
 
-            ###DEBUG
-            # print(f'--- APPLYING ATOM MASK IN BASE MODEL FORWARD ---')
-            # exit()
- 
         #check if kwargs contains return_atom_outputs
         if kwargs.get("return_atom_outputs", False):
             output_dict["atom_outputs"] = x
@@ -395,7 +357,7 @@ class BaseModel(nn.Module):
             )[0]
             assert dy is not None, "Autograd returned None for the force prediction."
             output_dict["dy"] = -dy
-           
+
         return output_dict
 
 class ET(BaseModel):
@@ -415,10 +377,6 @@ class ET(BaseModel):
         cutoff_upper=5.0,
         max_z=118,
         layernorm_on_vec=False,
-
-        use_cls_token=False,
-        norm_cls = True,
-        global_pos_emb=False,
 
         check_errors=True,
         box_vecs=None,
@@ -444,7 +402,6 @@ class ET(BaseModel):
             std=std,
             **kwargs,
         )
-        if use_cls_token: print('-----USING CLS TOKENS-----')
 
         self.rep_model = EquivariantTransformer(
             hidden_channels=emb_dim,
@@ -466,12 +423,8 @@ class ET(BaseModel):
             vector_cutoff=vector_cutoff,
             layernorm_on_vec=layernorm_on_vec,
             dtype=dtype,
-
-            # use_cls_token=use_cls_token,
-            # norm_cls=norm_cls,
-            # global_pos_emb=global_pos_emb,  # Use global positional embedding if specified
             )
-        
+
 class CET(BaseModel):
     def __init__(
         self,
@@ -496,7 +449,6 @@ class CET(BaseModel):
 
         p_droppath=0.1,
         p_dropcond=0.2,
-        # post_norm=True,
         inv_post_norm=False,
         vec_post_norm=False,
         vec_prenorm=True,
@@ -505,7 +457,7 @@ class CET(BaseModel):
         derivative=False,
         activation: str = "silu",
         aggregation: str = "sum",
-        emb_agg : str = "sum",
+        emb_agg: str = "sum",
         mean=None,
         std=None,
         **kwargs,
@@ -544,19 +496,74 @@ class CET(BaseModel):
             dtype=dtype,
             p_droppath=p_droppath,
             p_dropcond=p_dropcond,
-            # post_norm=post_norm,
             inv_post_norm=inv_post_norm,
             vec_post_norm=vec_post_norm,
             vec_prenorm=vec_prenorm,
             )
-        
-        # if self.derivative:
-        #     print('--- CET MODEL USING FORCE PREDICTION ---')
-        #     self.rep_model.ignore_conditioning(True) # completely by pass conditioning layer 
+
+class AccumulatedNormalization(nn.Module):
+    """Running normalization of a tensor."""
+    def __init__(self, accumulator_shape: Tuple[int, ...], epsilon: float = 1e-8):
+        super().__init__()
+
+        self._epsilon = epsilon
+        self._acc_shape = accumulator_shape
+        self.register_buffer("acc_sum", torch.zeros(accumulator_shape))
+        self.register_buffer("acc_squared_sum", torch.zeros(accumulator_shape))
+        self.register_buffer("acc_count", torch.zeros((1,)))
+        self.register_buffer("num_accumulations", torch.zeros((1,)))
+
+    def reset(self):
+        self.acc_sum = torch.zeros(self._acc_shape)
+        self.acc_squared_sum = torch.zeros(self._acc_shape)
+        self.acc_count = torch.zeros((1,))
+        self.num_accumulations = torch.zeros((1,))
 
 
+    def update_statistics(self, batch: torch.Tensor):
+        batch_size = batch.shape[0]
+        self.acc_sum += batch.sum(dim=0)
+        self.acc_squared_sum += batch.pow(2).sum(dim=0)
+        self.acc_count += batch_size
+        self.num_accumulations += 1
+
+    @property
+    def acc_count_safe(self):
+        return self.acc_count.clamp(min=1)
+
+    @property
+    def mean(self):
+        return self.acc_sum / self.acc_count_safe
+
+    @property
+    def std(self):
+        var = (self.acc_squared_sum / self.acc_count_safe) - self.mean.pow(2)
+        std = torch.sqrt(var.clamp(min=self._epsilon)).clamp(min=self._epsilon)
+        return std
+
+    def forward(self, batch: torch.Tensor, update=False):
+        if self.training and update:
+            self.update_statistics(batch)
+        return ((batch - self.mean) / (self.std + 1e-8))
+    
+    def inverse(self, batch: torch.Tensor):
+        return batch*(self.std + 1e-8) + self.mean
+
+    def __repr__(self):
+        attrs = [attr for attr in dir(self) if not attr.startswith('__') and not callable(getattr(self, attr))]
+        attr_strs = []
+        for attr in attrs:
+            try:
+                value = getattr(self, attr)
+                attr_strs.append(f"{attr}: {value}")
+            except Exception as e:
+                attr_strs.append(f"{attr}: <error retrieving value: {e}>")
+        return f"{self.__class__.__name__}(\n  " + "\n  ".join(attr_strs) + "\n)"
+
+
+
+from .frad.torchmd_frad_scd import CondFrad
 class CFrad(BaseModel):
-    #TODO: add CLS optionality 
     def __init__(
         self,
         emb_dim = 256,
@@ -597,12 +604,9 @@ class CFrad(BaseModel):
         derivative=False,
         activation: str = "silu",
         aggregation: str = "sum",
-        emb_agg : str = "sum",
+        emb_agg: str = "sum",
         mean=None,
         std=None,
-
-
-
         **kwargs,
     ):
         super().__init__(
@@ -616,21 +620,6 @@ class CFrad(BaseModel):
             std=std,
             **kwargs,
         )
-
-        '''new inputs:
-
-        seperate_noise=False,
-        num_spherical=3, 
-        num_radial=6, 
-        envelope_exponent=5,
-        int_emb_size=64,
-        basis_emb_size_dist=8, 
-        basis_emb_size_angle=8, 
-        basis_emb_size_torsion=8,
-        num_before_skip=1,
-        num_after_skip=2,
-        
-        '''
 
         vec_norm_ = 'whitened' if layernorm_on_vec else None
         md17_flag = self.derivative
@@ -651,9 +640,6 @@ class CFrad(BaseModel):
             cutoff_upper=cutoff_upper,
             max_z=max_z,
             max_num_neighbors=max_num_neighbors,
-            # check_errors=check_errors,
-            # box_vecs=box_vecs,
-            # vector_cutoff=vector_cutoff,
             layernorm_on_vec=vec_norm_,
             md17=md17_flag,
 
@@ -679,163 +665,4 @@ class CFrad(BaseModel):
             ### Frad specific ###
 
             )
-        
-class ETFrad(BaseModel):
-    def __init__(
-        self,
-        emb_dim = 256,
-        num_layers=8,
-        num_heads=8,
-        num_rbf=64,
-        rbf_type="expnorm",
-        trainable_rbf=True,
-
-        neighbor_embedding=True,
-        max_num_neighbors=32,
-        distance_influence="both",
-        cutoff_lower=0.0,
-        cutoff_upper=5.0,
-        max_z=118,
-        layernorm_on_vec=False,
-
-        ### Frad specific ###
-        seperate_noise=False,
-        num_spherical=3, 
-        num_radial=6, 
-        envelope_exponent=5,
-        int_emb_size=64,
-        basis_emb_size_dist=8, 
-        basis_emb_size_angle=8, 
-        basis_emb_size_torsion=8,
-        num_before_skip=1,
-        num_after_skip=2,
-        ### Frad specific ###
-
-        p_droppath=0.1,
-        p_dropcond=0.2,
-        inv_post_norm=False,
-        vec_prenorm=True,
-
-        dtype=torch.float32,
-        derivative=False,
-        activation: str = "silu",
-        aggregation: str = "sum",
-        emb_agg : str = "sum",
-        mean=None,
-        std=None,
-
-
-
-        **kwargs,
-    ):
-        super().__init__(
-            emb_dim=emb_dim,
-            derivative=derivative,
-            activation=activation,
-            aggregation=aggregation,
-            emb_agg=emb_agg,
-            dtype=dtype,
-            mean=mean,
-            std=std,
-            **kwargs,
-        )
-
-        vec_norm_ = 'whitened' if layernorm_on_vec else None
-        md17_flag = self.derivative
-        sep_noise = False
-
-        self.rep_model = FradOriginal(
-            hidden_channels=emb_dim,
-            num_layers=num_layers,
-            num_rbf=num_rbf,
-            rbf_type=rbf_type,
-            trainable_rbf=trainable_rbf,
-            activation=activation,
-            attn_activation=activation,
-            neighbor_embedding=neighbor_embedding,
-            num_heads=num_heads,
-            distance_influence=distance_influence,
-            cutoff_lower=cutoff_lower,
-            cutoff_upper=cutoff_upper,
-            max_z=max_z,
-            max_num_neighbors=max_num_neighbors,
-            layernorm_on_vec=vec_norm_,
-            md17=md17_flag,
-
-            ### Frad specific ###
-            seperate_noise=sep_noise,
-            num_spherical=num_spherical,
-            num_radial=num_radial,
-            envelope_exponent=envelope_exponent,
-            int_emb_size=int_emb_size,
-            basis_emb_size_dist=basis_emb_size_dist,
-            basis_emb_size_angle=basis_emb_size_angle,
-            basis_emb_size_torsion=basis_emb_size_torsion,
-            num_before_skip=num_before_skip,
-            num_after_skip=num_after_skip,
-            ### Frad specific ###
-
-            )
-
-
-#TODO: move this to conditional modules
-class AccumulatedNormalization(nn.Module):
-    """Running normalization of a tensor."""
-    def __init__(self, accumulator_shape: Tuple[int, ...], epsilon: float = 1e-8):
-        super().__init__()
-
-        self._epsilon = epsilon
-        self._acc_shape = accumulator_shape
-        self.register_buffer("acc_sum", torch.zeros(accumulator_shape))
-        self.register_buffer("acc_squared_sum", torch.zeros(accumulator_shape))
-        self.register_buffer("acc_count", torch.zeros((1,)))
-        self.register_buffer("num_accumulations", torch.zeros((1,)))
-
-    def reset(self):
-        self.acc_sum = torch.zeros( self._acc_shape )
-        self.acc_squared_sum = torch.zeros(self._acc_shape )
-        self.acc_count = torch.zeros((1,))
-        self.num_accumulations = torch.zeros((1,))
-
-
-    def update_statistics(self, batch: torch.Tensor):
-        batch_size = batch.shape[0]
-        self.acc_sum += batch.sum(dim=0)
-        self.acc_squared_sum += batch.pow(2).sum(dim=0)
-        self.acc_count += batch_size
-        self.num_accumulations += 1
-
-    @property
-    def acc_count_safe(self):
-        return self.acc_count.clamp(min=1)
-
-    @property
-    def mean(self):
-        return self.acc_sum / self.acc_count_safe
-
-    @property
-    def std(self):
-        var = (self.acc_squared_sum / self.acc_count_safe) - self.mean.pow(2)
-        std = torch.sqrt(var.clamp(min=self._epsilon)).clamp(min=self._epsilon)
-        return std
-
-    def forward(self, batch: torch.Tensor, update=False):
-        if self.training and update:
-            self.update_statistics(batch)
-        return ((batch - self.mean) / (self.std + 1e-8))
-    
-    def inverse(self, batch : torch.Tensor):
-        return batch*(self.std + 1e-8) + self.mean
-
-    def __repr__(self):
-        # Print out all self variables
-        attrs = [attr for attr in dir(self) if not attr.startswith('__') and not callable(getattr(self, attr))]
-        attr_strs = []
-        for attr in attrs:
-            try:
-                value = getattr(self, attr)
-                attr_strs.append(f"{attr}: {value}")
-            except Exception as e:
-                attr_strs.append(f"{attr}: <error retrieving value: {e}>")
-        return f"{self.__class__.__name__}(\n  " + "\n  ".join(attr_strs) + "\n)"
 

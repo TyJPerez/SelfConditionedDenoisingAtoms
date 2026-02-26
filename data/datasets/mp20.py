@@ -5,7 +5,6 @@ from torch_geometric.transforms import Compose
 import torch
 import numpy as np
 
-
 class mp20_dataset(MP20_dataset):
     def __init__(self, p_rep=0.1, rep_iters=1, min_atoms=4, **kwargs):
         

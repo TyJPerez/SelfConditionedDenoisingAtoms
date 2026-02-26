@@ -6,8 +6,13 @@ from data.datasets.geom import GEOM_dataset
 from data.datasets.pcqm4mv2 import PCQM4MV2_XYZ
 from data.datasets.sair import SampledSAIRDataset
 
-from data.datasets.transforms import AddStandardKeys, RandomCellRepeats
-from torch_geometric.transforms import Compose
+# from data.datasets.transforms import AddStandardKeys, RandomCellRepeats
+# from torch_geometric.transforms import Compose
+
+'''
+NOTE: The all atoms dataset requires the StructureCloud library, which is not yet released.
+but StructureCloud will be coming soon!
+'''
 
 class AddTag():
     'used to tag origin of data samples in multi-dataset scenarios'
@@ -23,6 +28,12 @@ class AddTag():
         return data
     
 def load_all_datasets():
+
+    '''
+      Edit this function to add/remove datasets from the combined dataset.
+      Each dataset will be tagged with a 'tag' attribute for identification. 
+      Make sure to also add the corresponding import statements at the top of the file.
+    '''
 
     dataset_list = []
     
@@ -121,22 +132,4 @@ class AllAtomsDataset(Dataset):
             data = self.transform(data)
 
         return data
-
-
-
-# standard_transforms = Compose([
-#         AddStandardKeys(),
-#         RandomCellRepeats(
-#             p_rep=0.5,
-#         ),
-#     ])
-
-# # dataset_list = [pcq, geom10, amp20]
-
-# all_ds = AllStructuresDataset(transform=standard_transforms)
-# print(f'All structures dataset size: {len(all_ds)}')
-# print(f'All structures dataset conformers: {all_ds.conformer_count()}')
-
-# sample = all_ds[0]
-# print(sample, sample.natoms)
 

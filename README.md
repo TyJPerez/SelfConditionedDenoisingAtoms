@@ -11,7 +11,12 @@ cd models/ET_models && python setup.py build_ext --inplace
 ## Pretraining 
 Pretrain a model using scd on the PCQ dataset
 ```bash
-python train.py --conf configs/pretrain_pcq.yaml --job-id SCD_pretrain_pcq
+python train.py --conf configs/pretrain_pcq.yaml
+```
+
+Pretrain a model using scd on the Alex-MP-20 dataset
+```bash
+python train.py --conf configs/pretrain_amp20.yaml
 ```
 
 ## Finetuning

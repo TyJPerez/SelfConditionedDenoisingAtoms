@@ -252,11 +252,6 @@ class LBABenchmark(LBADataset_base):
             ligand_mask = torch.cat([torch.zeros_like(pocket_pos[:, 0]), torch.ones_like(ligand_pos[:, 0])], dim=0)
             all_pos = torch.cat([pocket_pos, ligand_pos], dim=0)
             all_z = torch.cat([pocket_z, ligand['z']], dim=0)
-
-        # pocket_mask = torch.cat([torch.ones_like(pocket_pos[:, 0]), torch.zeros_like(ligand_pos[:, 0])], dim=0)
-        # ligand_mask = torch.cat([torch.zeros_like(pocket_pos[:, 0]), torch.ones_like(ligand_pos[:, 0])], dim=0)
-        # all_pos = torch.cat([pocket_pos, ligand_pos], dim=0)
-        # all_z = torch.cat([pocket_z, ligand['z']], dim=0)
         
         y = ligand['neglog_aff']
 
@@ -274,10 +269,7 @@ class LBABenchmark(LBADataset_base):
         return Data_obj
     
     def get_subset(self, split):
-        # assert split in ['train', 'val', 'test'], f"split {split} not in ['train', 'val', 'test']"
-        # if split == 'val':
-        #     split = 'test'  #map val to test for LBA benchmark
-        
+
         #return a new copy of the dataset with the new split
         subset = self.__class__(
             split=split,
@@ -309,19 +301,3 @@ class lba_dataset(LBABenchmark):
         kwargs['task_name'] = dataset_arg
         kwargs['split'] = 'train-val'
         super().__init__( **kwargs)
-
-
-# class lba_res(LBABenchmark):
-#     def __init__(self,
-#                  root=None, # place holder for compatibility
-#                  dataset_arg=None, # fold index 
-#                  **kwargs
-#                  ):
-
-#         super().__init__(root=root, 
-#                          dataset_arg=dataset_arg, 
-#                          use_residue_z = False,
-#                          z_res_offset = 90,
-#                          lig_only= True,
-#                          **kwargs)
-    

@@ -20,15 +20,11 @@ except ImportError:
             default_cache = os.path.expanduser("~/.cache/huggingface")
             hf_cache_dir = default_cache
         assert os.path.exists(hf_cache_dir), f"HuggingFace cache directory does not exist: {hf_cache_dir}"    
-
         hf_cache_dir = os.path.join(hf_cache_dir, subdir) # add subdir
-
         #check if subdir exists, if not create it
         if not os.path.exists(hf_cache_dir):
             os.makedirs(hf_cache_dir)
 
-        # assert os.path.exists(hf_cache_dir), f"HuggingFace cache directory does not exist: {hf_cache_dir}"
-        # print(f"HuggingFace cache directory: {hf_cache_dir}")
         return hf_cache_dir
 
 

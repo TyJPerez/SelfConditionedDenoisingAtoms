@@ -5,9 +5,9 @@ num_layers: 8
 num_heads: 8
 num_rbf: 64
 rbf_type: expnorm
-trainable_rbf: false # consider changing
+trainable_rbf: false 
 neighbor_embedding: true
-max_num_neighbors: 64 #32
+max_num_neighbors: 32 # 64 #32 # increase this if you run into errors using larger molecules
 distance_influence: both
 
 aggregation: add
@@ -20,15 +20,13 @@ max_z: 118
 derivative: false
 layernorm_on_vec: False #True # slow and not helpful
 
-p_dropcond: 0.2 #0.2
-p_droppath: 0.1
-# post_norm: False
+p_dropcond: 0.2 # probability of dropping conditioning vector
+p_droppath: 0.1 # probability of dropping path (stochastic depth)
+
 inv_post_norm: True
 vec_post_norm: False # way too slow
 vec_prenorm: True
-
 emb_agg : sum # TRY mean version
-
-vector_cutoff: True  #TODO test this
+vector_cutoff: True 
 
 

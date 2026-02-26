@@ -1,6 +1,7 @@
 load_model: null
 log_dir: experiments/
 job_id: scd-s-n004_pcq
+wandb_notes: "SCD pretraining with PCQ"
 
 ## DATASET & LOADER INPUTS ###
 dataset: PCQM4MV2
@@ -10,16 +11,14 @@ train_size: null
 
 test_size: 100
 val_size: 100
-batch_size: 128
-inference_batch_size: 128
+batch_size: 64
+inference_batch_size: 64
 seed: 1
 num_workers: 6
 
 #choose model architecture here
 model_config: configs/model_configs/scd.yaml
 
-wandb_notes: "SCD pretraining with PCQ"
-job_id: auto
 
 energy_weight: 0.0
 force_weight: 1.0

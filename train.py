@@ -202,7 +202,9 @@ def get_args():
     args = parser.parse_args()
 
     if args.job_id == "auto":
-        assert len(os.environ['CUDA_VISIBLE_DEVICES'].split(',')) == 1, "Might be problematic with DDP."
+        cuda_visible = os.environ.get('CUDA_VISIBLE_DEVICES', '')
+        if cuda_visible:
+            assert len(cuda_visible.split(',')) == 1, "Might be problematic with DDP."
         if Path(args.log_dir).exists() and len(os.listdir(args.log_dir)) > 0:        
             next_job_id = str(max([int(x.name) for x in Path(args.log_dir).iterdir() if x.name.isnumeric()])+1)
         else:

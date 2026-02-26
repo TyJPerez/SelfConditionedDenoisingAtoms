@@ -3,6 +3,8 @@ log_dir: experiments/
 load_model: null
 load_hf: null
 # load_hf : ct-scd-pcq # load our pretrained model from hugging-face
+job_id: qm9_homo
+wandb_notes: ""
 
 model_config: configs/model_configs/scd.yaml
 
@@ -45,8 +47,7 @@ precision: 32
 save_interval: 5 
 test_interval: 1
 
-wandb_notes: ""
-job_id: auto
+
 
 pretraining: false
 self_cond: false

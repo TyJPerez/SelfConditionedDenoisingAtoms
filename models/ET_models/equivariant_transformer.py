@@ -18,8 +18,6 @@ from .utils import (
     scatter,
     EquivariantLayerNorm,
 )
-# from models.modules.clsnodes import ClassNodes
-# from models.modules.harmonic_emb import FourierPointEncoding
 
 class EquivariantMultiHeadAttention(nn.Module):
     """Equivariant multi-head attention layer."""
@@ -276,10 +274,6 @@ class EquivariantTransformer(nn.Module):
 
         ### new 
         layernorm_on_vec= False,
-        use_cls_token = False,
-        norm_cls = False,
-        global_pos_emb = False,
-
         ###
 
     ):
@@ -360,28 +354,6 @@ class EquivariantTransformer(nn.Module):
 
         self.vec_norm = EquivariantLayerNorm(hidden_channels, dtype=dtype) if layernorm_on_vec else nn.Identity()
 
-        ### CLS TOKEN MODIFICATION ###
-        self.cls_nodes = None
-        # if use_cls_token:
-        #     self.cls_nodes = ClassNodes(
-        #         node_dim=hidden_channels,
-        #         edge_dim=num_rbf,
-        #         init_edge_weight=1.0,
-        #         init_alpha=1.0,
-        #         normalize_cls=norm_cls,  # normalize cls by num nodes
-        #     )
-        ### CLS TOKEN MODIFICATION ###
-
-        ### global positional embedding ###
-        # a non-equiv positional encoding
-        if global_pos_emb:
-            self.global_pos_emb = None
-            # print("-----USING GLOBAL POSITIONAL EMBEDDING-----")
-            # self.global_pos_emb = FourierPointEncoding(hidden_channels)
-        else:
-            self.global_pos_emb = None
-        ### global positional embedding ###
-
         self.reset_parameters()
 
     def freeze_embeddings(self, freeze=True):
@@ -446,47 +418,18 @@ class EquivariantTransformer(nn.Module):
         if self.neighbor_embedding_module is not None:
             x = self.neighbor_embedding_module(z, x, edge_index, edge_weight, edge_attr)
 
-        ### test global pos embeddings ###
-        if self.global_pos_emb is not None:
-            #add global positional emb
-            x += self.global_pos_emb(pos)
-        ### test global pos embeddings ###
-
-        ### CLS TOKEN MODIFICATION ###
-        if self.cls_nodes is not None:
-            #add cls tokens
-            cls_mask, x, edge_index, edge_weight, edge_attr, edge_vec = self.cls_nodes(
-                batch, pos, x, edge_index, edge_weight, edge_attr, edge_vec
-            )
-        ### CLS TOKEN MODIFICATION ###
 
         vec = torch.zeros(x.size(0), 3, x.size(1), device=x.device, dtype=x.dtype)
 
         for attn in self.attention_layers:
             dx, dvec = attn(x, vec, edge_index, edge_weight, edge_attr, edge_vec)
 
-            ### CLS TOKEN MODIFICATION ###
-            if self.cls_nodes is not None:
-                dx, dvec = self.cls_nodes.scale_cls(dx, dvec, batch_idx=batch, cls_mask=cls_mask)
-            ### CLS TOKEN MODIFICATION ###
-
             x = x + dx
             vec = vec + dvec
         x = self.out_norm(x)
         vec = self.vec_norm(vec)
 
-        ### CLS TOKEN MODIFICATION ###
-        out_cls = None
-        if self.cls_nodes is not None:
-            # pop cls tokens off
-            x, vec, x_cls, vec_cls = self.cls_nodes.pop(x, vec, cls_mask)
-            out_cls ={
-                'x': x_cls,
-                'vec': vec_cls
-            }
-        ### CLS TOKEN MODIFICATION ###
-
-        return x, vec, z, pos, batch #, out_cls
+        return x, vec, z, pos, batch
 
     def __repr__(self):
         return (

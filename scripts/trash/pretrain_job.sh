@@ -1,10 +1,10 @@
 #!/bin/bash
-#SBATCH -J scd-n004_geom_4n
-#SBATCH --account=m4866          # , m5068_g
+#SBATCH -J scd-n004_pcq300k
+#SBATCH --account=m5068_g          # e.g., m1234_g
 #SBATCH -C gpu                          # request GPU nodes
-#SBATCH -q premium                      # 4 GPUs -> regular QoS # regular or premium
-#SBATCH -t 10:00:00                     # job time limit hh:mm:ss
-#SBATCH --nodes=4                       # node count
+#SBATCH -q regular                      # 4 GPUs -> regular QoS # regular or premium
+#SBATCH -t 22:00:00                     # job time limit hh:mm:ss
+#SBATCH --nodes=1                       # node count
 #SBATCH --ntasks-per-node=4
 #SBATCH -c 32                           # 32 CPUs per task (Perlmutter example)
 #SBATCH --gpus-per-node=4               # number of gpus per node
@@ -19,37 +19,14 @@
 
 mkdir -p logs # create logs directory 
 
-# job_id=cet-pcq_2
-# conf=configs/nersc_pt.yaml
-
-max_epochs_per_run=300000
 
 ##### Recent JOBs Send
-# job_id=scd-m-n004_pcq
-# conf=configs/scd-m-n004_pretrain.yaml
 
-# job_id=scd-m-n04_pcq
-# conf=configs/scd-m-n04_pretrain.yaml
+job_id=scd-n004_pcq300k
+conf=configs/scd-s-n004_pretrain_300k.yaml
 
-# job_id=scd-s-n004_pcq
-# conf=configs/scd-s-n004_pretrain.yaml
 
-# job_id=scd-s-n04_pcq
-# conf=configs/scd-s-n04_pretrain.yaml
-
-#small models
-# job_id=scdSm-n04_pcq
-# conf=configs/scdS-m-n04_pretrain.yaml
-
-# job_id=scdSs-n004_pcq #currently running as scdSs-n004_pcq
-# conf=configs/scdS-s-n004_pretrain.yaml
-
-job_id=scd-n004_geom_b48n4 #currently running as scdSs-n004_pcq
-conf=configs/scd_pretrain_geom.yaml
-
-### Big Model
-# job_id=scdB_pcq_b96-lr7
-# conf=configs/scdB_pretrain80GB.yaml
+max_epochs_per_run=3000000
 
 
 OUT_DIR="experiments/$job_id"  # choose a PSCRATCH path

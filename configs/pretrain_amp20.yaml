@@ -1,6 +1,8 @@
 load_model: null
 log_dir: experiments/
-job_id: cet-amp20_0
+job_id: scd-amp20
+wandb_notes: "SCD pretraining with AMP20"
+
 
 ## DATASET & LOADER INPUTS ###
 dataset: AlexMP20
@@ -44,8 +46,7 @@ test_interval: 1
 
 splits: null
 standardize: false 
-wandb_notes: ""
-job_id: auto
+
 
 pretraining: true
 self_cond: true
