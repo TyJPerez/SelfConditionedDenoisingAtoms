@@ -2,11 +2,14 @@
 Self-Conditioned Denoising for molecular pretraining
 
 ## Setup 
-torch-md net derivative models include a optimized kernal for graph generation. Thus must be compiled before use
+1. use the requirements.txt to set up your environment
+
+2. torch-md net derivative models include an optimized kernal for graph generation. Thus must be compiled before use.
 
 ```bash
 cd models/ET_models && python setup.py build_ext --inplace
 ```
+This might take a few minutes. After its done you should see a new file `models/ET_models/extensions/torchmdnet_extensions.so`
 
 ## Pretraining 
 Pretrain a model using scd on the PCQ dataset

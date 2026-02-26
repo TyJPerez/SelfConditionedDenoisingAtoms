@@ -67,8 +67,8 @@ class LTrainer(LightningModule):
 
                 if not ckpt_epoch == _epoch:
                     print(f'WARNING: Checkpoint epoch {ckpt_epoch} does not match requested restart epoch {_epoch}. loaded step {ckpt_step}')
-            if not ckpt_step-1 == _step:
-                print(f'WARNING: Checkpoint step {ckpt_step} does not match expected step {_step}')
+                if not ckpt_step-1 == _step:
+                    print(f'WARNING: Checkpoint step {ckpt_step} does not match expected step {_step}')
             print(f"Restarting from checkpoint: {checkpoint_path}, epoch: {_epoch}, step: {_step}")
             
             self.hparams.load_model = checkpoint_path

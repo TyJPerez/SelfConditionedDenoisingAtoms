@@ -147,18 +147,18 @@ class QM9(QM9_geometric):
 
         # if rdkit is None:
         if True:
-            print(("Using a pre-processed version of the dataset. Please "
-                   "install 'rdkit' to alternatively process the raw data."),
-                  file=sys.stderr)
+            # print(("Using a pre-processed version of the dataset. Please "
+            #        "install 'rdkit' to alternatively process the raw data."),
+            #       file=sys.stderr)
 
             data_list = torch.load(self.raw_paths[0], weights_only=False)  # raw_paths[0] = qm9_v3.pt
-            data_list = [Data(**data_dict) for data_dict in data_list]
+            data_list = [Data(**data_dict) for data_dict in tqdm(data_list, desc="Loading pre-processed data")]
 
             if self.pre_filter is not None:
-                data_list = [d for d in data_list if self.pre_filter(d)]
+                data_list = [d for d in tqdm(data_list, desc="Filtering data") if self.pre_filter(d)]
 
             if self.pre_transform is not None:
-                data_list = [self.pre_transform(d) for d in data_list]
+                data_list = [self.pre_transform(d) for d in tqdm(data_list, desc="Transforming data")]
 
             self.save(data_list, self.processed_paths[0])
             return
