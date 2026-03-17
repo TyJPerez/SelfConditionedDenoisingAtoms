@@ -37,9 +37,9 @@ lr_factor: 0.8
 lr_min: 1.0e-07
 lr_patience: 15
 lr_warmup_steps: 10000 
-lr_cosine_length: 800000 #400000
-num_epochs: 3000 # DEBUG
-num_steps: 800000 #400000 #DEBUG
+lr_cosine_length: 800000 
+num_epochs: 3000 
+num_steps: 800000 
 precision: 32
 
 splits: null
@@ -48,7 +48,6 @@ standardize: false
 save_interval: 1
 test_interval: 1
 
-# denoising_only: true # must be true for SCD pretraining
 pretraining: true
 self_cond: true
 noise_scale: 0.04
