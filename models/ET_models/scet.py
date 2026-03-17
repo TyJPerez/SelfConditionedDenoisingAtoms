@@ -90,9 +90,8 @@ class CondEquivMultiHeadAttention(nn.Module):
         self.reset_parameters()
 
     def reset_parameters(self):
-        # self.layernorm.reset_parameters()
-
         ### Added for SCD ###
+        # self.layernorm.reset_parameters()
         self.vec_norm.reset_parameters() 
         self.conditional_ln.reset_parameters()
         ### Added for SCD ###
@@ -321,8 +320,6 @@ class ConditionalET(nn.Module):
         vec_prenorm=False,
 
         legacy=False, # if True, uses original ET graph generator that only supports ortho periodic boxes
-        # allow_pbc=False, # changes which graph generator is used
-        # torch default does not allow for non-ortho periodic materials
 
     ):
         super().__init__()
@@ -376,13 +373,11 @@ class ConditionalET(nn.Module):
             self.cutoff_lower,
             self.cutoff_upper,
             max_num_pairs=-self.max_num_neighbors,
-            # max_num_pairs=-64,
             return_vecs=True,
             loop=True,
             box=box_vecs,
             long_edge_index=True,
             check_errors=check_errors,
-            # check_errors=False,
         )
         
         ###### added to support non-ortho periodic crystals ######
@@ -410,8 +405,6 @@ class ConditionalET(nn.Module):
         )
 
         self.attention_layers = nn.ModuleList()
-
-        # self.use_post_norm = post_norm
         self.use_inv_post_norm = inv_post_norm
         self.use_vec_post_norm = vec_post_norm
         self.x_post_norm = nn.ModuleList()
@@ -436,17 +429,12 @@ class ConditionalET(nn.Module):
             self.x_post_norm.append(nn.LayerNorm(hidden_channels, dtype=dtype))
             self.v_post_norm.append(EquivariantLayerNorm(hidden_channels, dtype=dtype))
 
-
-        # self.out_norm = nn.LayerNorm(hidden_channels, dtype=dtype)
-        # self.vec_norm = EquivariantLayerNorm(hidden_channels, dtype=dtype) if layernorm_on_vec else nn.Identity()
         self.layernorm_on_vec = layernorm_on_vec
 
         #### MODIFICATIONS FOR SCD ####
         self.p_cond_dropout = p_dropcond # probability of dropping input conditioning and replacing with mask token
         self.drop_cond = DropCond(dim=hidden_channels, p_drop=self.p_cond_dropout) # drop and expands conditinal embedding to node level
-        
-        self.clip_value = 1e3 #100.0  # used to improve stability of torchnet architecture
-        # self.clip_value = float("inf") # FIXME: temprorary
+        self.clip_value = 1e3  # used to improve stability of torchnet architecture
         self.ignore_cond = False
         #### MODIFICATIONS FOR SCD ####
 
@@ -474,10 +462,6 @@ class ConditionalET(nn.Module):
         if self.v_post_norm is not None:
             for vln in self.v_post_norm:
                 vln.reset_parameters()
-
-        # self.out_norm.reset_parameters()
-        # if self.layernorm_on_vec:
-        #     self.vec_norm.reset_parameters()
     
     def init_graph(self, pos, batch, data_batch=None):
         
@@ -497,10 +481,6 @@ class ConditionalET(nn.Module):
                     "data_batch has edge_index but is missing edge_distance_vec"
                 )
 
-                # edge_index = data_batch.getattr('edge_index')
-                # edge_weight = data_batch.getattr('edge_distance')
-                # edge_vec = data_batch.getattr('edge_distance_vec')
-
                 edge_index = data_batch.edge_index
                 edge_weight = data_batch.edge_distance
                 edge_vec = data_batch.edge_distance_vec
@@ -514,9 +494,6 @@ class ConditionalET(nn.Module):
                 edge_index = out["edge_index"]
                 edge_weight = out["edge_distance"]
                 edge_vec = out["edge_distance_vec"]
-
-                ##debugging
-                # print("--- Using batch graph generator ---")
 
                 return edge_index, edge_weight, edge_vec
 
@@ -600,16 +577,11 @@ class ConditionalET(nn.Module):
             
             x = x + dx
             vec = vec + dvec
-            # if self.use_post_norm: # to improve stability
             if self.use_inv_post_norm:
                 x = self.x_post_norm[l](x)
             
             if self.use_vec_post_norm:
                 vec = self.v_post_norm[l](vec)
-
-        # if not self.use_post_norm: 
-        #     x = self.x_post_norm[-1](x)
-        #     vec = self.v_post_norm[-1](vec)
 
         if not self.use_inv_post_norm: 
             x = self.x_post_norm[-1](x)

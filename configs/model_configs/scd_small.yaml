@@ -17,18 +17,15 @@ cutoff_upper: 5.0
 derivative: false
 max_z: 118
 
-derivative: false
+derivative: false # Turn this on for gradient based force prediction compatibility
 layernorm_on_vec: True
 
-p_dropcond: 0.2 #0.2
+p_dropcond: 0.2 
 p_droppath: 0.1
-# post_norm: False
 inv_post_norm: True
-vec_post_norm: False # way too slow
+vec_post_norm: False #unnecessary and slow, leave off
 vec_prenorm: True
-
-emb_agg : sum # TRY mean version
-
-vector_cutoff: True  #TODO test this
+emb_agg : sum
+vector_cutoff: True  
 
 

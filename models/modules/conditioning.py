@@ -22,7 +22,7 @@ class JointDropPath(nn.Module):
 
 class DyT(nn.Module):
     # Layer norm but fast
-    # Publication: "Transformers without Normalization" https://arxiv.org/pdf/2503.10622v1
+    # from "Transformers without Normalization" https://arxiv.org/pdf/2503.10622v1
     def __init__(self, dim, init_alpha=0.2):
         super().__init__()
         self.norm_alpha = nn.Parameter(torch.tensor(init_alpha))

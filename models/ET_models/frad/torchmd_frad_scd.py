@@ -18,15 +18,12 @@ from models.ET_models.utils import (
     act_class_mapping,
 )
 
-# from models.ET_models.utils import OptimizedDistance as Distance
 from .frad_utils import Distance
 
 from .feats import dist_emb, angle_emb, torsion_emb, xyz_to_dat
 
 from models.modules.conditioning import adaLN2, DropCond, DyT, JointDropPath
 from models.ET_models.graph_utils.compute import GraphGenerator
-
-# init edge features
 
 class EdgeFeatureInit(nn.Module):
     r"""init the edge feature of torchmd net"""
@@ -330,7 +327,6 @@ class CondFrad(nn.Module):  # TorchMD_ETF2D
             self.type_embedding = nn.Embedding(2, hidden_channels // 2)
         else:
             self.embedding = nn.Embedding(self.max_z, hidden_channels)
-        # self.embedding = nn.Embedding(self.max_z, hidden_channels)
 
 
         self.legacy = legacy #FIXME
@@ -450,24 +446,6 @@ class CondFrad(nn.Module):  # TorchMD_ETF2D
         if self.layernorm_on_vec:
             self.out_norm_vec.reset_parameters()
 
-    # def forward(self, z, 
-    #             pos, 
-    #             batch,
-    #             box = None,
-    #             cond=None,  ### SCD
-    #             return_e=False, 
-    #             type_idx=None):
-    #     try:
-    #         return self._forward(z, pos, batch, box=box, cond=cond, return_e=return_e, type_idx=type_idx)
-    #     except Exception as e:
-    #         print(f"Error in forward pass: {e}")
-    #         print(f"Input shapes - z: {z.shape}, pos: {pos.shape}")
-    #         if torch.isnan(z).any():
-    #             print("NaN in input z!")
-    #         if torch.isnan(pos).any():
-    #             print("NaN in input pos!")
-    #         raise
-
     def init_graph(self, pos, batch, data_batch=None):
         box = None
         if self.legacy:  # this is fast non-periodic graph generation
@@ -499,8 +477,6 @@ class CondFrad(nn.Module):  # TorchMD_ETF2D
 
             return edge_index, edge_weight, edge_vec
 
-        #Default ET graph generation
-        # edge_index, edge_weight, edge_vec = self.distance(pos, batch, box) #throws error
         edge_index, edge_weight, edge_vec = self.distance(pos, batch)
 
         return edge_index, edge_weight, edge_vec

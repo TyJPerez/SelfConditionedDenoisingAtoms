@@ -528,19 +528,17 @@ class LTrainer(LightningModule):
         loss = loss_pos
         self.losses[stage].append(loss.detach())
 
-        ##### TODO: Add contrastive loss on mol_emb #####
-        if self.ctr_loss is not None and stage == 'train' and self.ctr_loss_weight > 0.0:
-            clean_emb = target_out['mol_emb']
-            corrupted_emb = s_out['mol_emb']
+        # ##### TODO: Add contrastive loss on mol_emb #####
+        # if self.ctr_loss is not None and stage == 'train' and self.ctr_loss_weight > 0.0:
+        #     clean_emb = target_out['mol_emb']
+        #     corrupted_emb = s_out['mol_emb']
 
-            contrastive_loss = self.ctr_loss(clean_emb, corrupted_emb)
-            ctr_temp = self.ctr_loss.get_tau().item()
+        #     contrastive_loss = self.ctr_loss(clean_emb, corrupted_emb)
+        #     ctr_temp = self.ctr_loss.get_tau().item()
 
-            #add contrastive loss to total loss
-            loss += self.ctr_loss_weight * contrastive_loss
-
-
-        ##### TODO: Add contrastive loss on mol_emb #####
+        #     #add contrastive loss to total loss
+        #     loss += self.ctr_loss_weight * contrastive_loss
+        # ##### TODO: Add contrastive loss on mol_emb #####
 
         # Frequent per-batch logging for training
         if stage == 'train':
@@ -568,10 +566,10 @@ class LTrainer(LightningModule):
             train_metrics['batch_num_graphs'] = batch_size
 
 
-            if self.ctr_loss is not None:
-                #log contrastive loss and tau
-                train_metrics['loss_contrastive'] = contrastive_loss.item()
-                train_metrics['tau'] = ctr_temp
+            # if self.ctr_loss is not None:
+            #     #log contrastive loss and tau
+            #     train_metrics['loss_contrastive'] = contrastive_loss.item()
+            #     train_metrics['tau'] = ctr_temp
 
             self.log_dict(train_metrics, sync_dist=True)
         
