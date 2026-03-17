@@ -11,7 +11,7 @@ from pytorch_lightning import LightningModule
 
 from models.model_helper2 import create_model, get_model_checkpoint, load_model
 from .utils.graphaug import GraphAugmenter
-from models.modules.contrastive import ContrastiveLoss
+# from models.modules.contrastive import ContrastiveLoss
 from data.batchclipper import BatchClipper, TupleBatchClipper
 
 from scipy.stats import spearmanr
@@ -196,17 +196,17 @@ class LTrainer(LightningModule):
                 print('--- Using EMA model for validation ---')
 
 
-        use_contrastive_loss = self.hparams.create_contrastive_loss
-        self.ctr_loss_weight = self.hparams.contrastive_loss_weight
+        # use_contrastive_loss = self.hparams.create_contrastive_loss
+        # self.ctr_loss_weight = self.hparams.contrastive_loss_weight
 
-        self.ctr_loss = None
-        if use_contrastive_loss:
-            self.ctr_loss = ContrastiveLoss(dim=self.model.emb_dim,
-                                            hidden_dim=2048,
-                                            proj_dim=128,
-                                            learn_tau=True,
-                                            tau=self.hparams.ctr_init_tau if hasattr(self.hparams, 'ctr_init_tau') else 0.1,
-                                            )
+        # self.ctr_loss = None
+        # if use_contrastive_loss:
+        #     self.ctr_loss = ContrastiveLoss(dim=self.model.emb_dim,
+        #                                     hidden_dim=2048,
+        #                                     proj_dim=128,
+        #                                     learn_tau=True,
+        #                                     tau=self.hparams.ctr_init_tau if hasattr(self.hparams, 'ctr_init_tau') else 0.1,
+        #                                     )
 
     def on_load_checkpoint(self, checkpoint):
         if self.hparams.restart:
@@ -235,7 +235,6 @@ class LTrainer(LightningModule):
         y_true_local = torch.cat(self.step_outputs[f'{stage}_y_true'], dim=0)
         y_pred_local = torch.cat(self.step_outputs[f'{stage}_y_pred'], dim=0)
         
-        ### TODO verify this is correct for distributed training ###
         # Gather from all processes if using distributed training
         if self.trainer.world_size > 1:
             # all_gather returns a list of tensors, one from each process
@@ -291,9 +290,9 @@ class LTrainer(LightningModule):
 
         all_param_groups = []
 
-        if self.ctr_loss is not None and self.pretraining and self.self_cond:
-            all_param_groups += self.ctr_loss.get_parameter_groups(weight_decay=self.hparams.weight_decay)
-            print(f'--- Using contrastive loss with proj dim {self.ctr_loss.proj_head.mlp[-1].out_features} ---')
+        # if self.ctr_loss is not None and self.pretraining and self.self_cond:
+        #     all_param_groups += self.ctr_loss.get_parameter_groups(weight_decay=self.hparams.weight_decay)
+        #     print(f'--- Using contrastive loss with proj dim {self.ctr_loss.proj_head.mlp[-1].out_features} ---')
 
         if not hasattr(self.model, 'get_parameter_groups'):
             print('WARNING: model has no get_parameter_groups function, using all parameters for optimization')

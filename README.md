@@ -2,16 +2,25 @@
 This is the official implementation for the paper:
 [Self-Conditioned Denoising for Atomistic Representation Learning](https://insert-the-link-to-the-paper-here.com)
 
+This repo provides simple access to several pretrained models pretrained by self-conditioned denoising as described in our publication linked above.
 
 ## Setup 
-1. use the requirements.txt to set up your environment
+1. Create and set up your environment 
+```bash
+pip install -r requirements.txt
+```
 
-2. torch-md net derivative models include an optimized kernal for graph generation. Thus must be compiled before use.
+2. RECOMMENDED (Optional): build graph creation kernal
+TorchMD-Net provides an optimized kernal for graph generation that can speed up on the fly graph creation for non-periodic systems. To use this kernal, you must compile it using the following script.
 
 ```bash
 cd models/ET_models && python setup.py build_ext --inplace
 ```
-This might take a few minutes. After its done you should see a new file `models/ET_models/extensions/torchmdnet_extensions.so`
+
+An alternative more general graph creation method that is applicable to periodic materials is also provided. See `examples.ipynb' for additional details on how to use either graph creation method.
+
+## Loading and using a pretrained model
+See examples in `examples.ipynb`
 
 ## Pretraining 
 Pretrain a model using scd on the PCQ dataset
@@ -36,5 +45,9 @@ Load a pretrained checkpoint from a local repo
 python train.py --conf configs/finetune_qm9.yaml --load-model 'experiments/{NAME}/{checkpoint}.ckpt' --job-id pretrained_qm9-homo
 ```
 
-## about this repo
-this is repo was originally modified from the 'pre-training-via-denoising' repo here [https://github.com/shehzaidi/pre-training-via-denoising]
+## about
+this is repo was originally forked from the 'pre-training-via-denoising' repo here [https://github.com/shehzaidi/pre-training-via-denoising]
+
+
+## Citation
+

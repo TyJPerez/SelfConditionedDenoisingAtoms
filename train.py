@@ -318,18 +318,6 @@ def main():
         else:
 
             args.pretrained_model = download_model_checkpoint(args.load_hf, save_dir=args.log_dir)
-            # from huggingface_hub import hf_hub_download
-            # print(f"Loading model from Huggingface repo: {args.load_hf}")
-            # cache_dir = "/home/tjp/Projects/SelfConditionedDenoising/experiments/hf_models"
-            # model_name = args.load_hf
-            # assert os.path.exists(cache_dir), f"Cache dir {cache_dir} does not exist. Please create it first or change the cache dir variable in this script."
-            
-            # hf_ckpt_path = hf_hub_download(
-            #     repo_id=f"Ty-Perez/{model_name}",
-            #     filename="last.ckpt",
-            #     cache_dir=cache_dir
-            # )
-            # args.pretrained_model = hf_ckpt_path
     
     if checkpoint_path is not None:
         model = LTrainer.load_from_checkpoint(checkpoint_path, 

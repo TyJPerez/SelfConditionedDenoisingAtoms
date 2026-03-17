@@ -11,14 +11,6 @@ lightning-utilities
 
 # PyTorch Geometric and Extensions
 torch-geometric>=2.4.0
-
-# torch-scatter, torch-cluster, and torch-sparse require special installation with pre-built wheels
-# Install separately with: pip install torch-scatter torch-cluster torch-sparse -f https://data.pyg.org/whl/torch-2.6.0+cu124.html
-# Or for CPU-only: pip install torch-scatter torch-cluster torch-sparse -f https://data.pyg.org/whl/torch-2.6.0+cpu.html
-# Adjust the torch version (2.6.0) and CUDA version (cu124) to match your PyTorch installation
-# See https://pytorch-geometric.readthedocs.io/en/latest/install/installation.html for details
-
-# Scientific Computing
 numpy>=1.20.0
 scipy>=1.7.0
 scikit-learn>=1.0.0
@@ -29,25 +21,10 @@ ase>=3.22.0
 pymatgen>=2023.0.0
 rdkit>=2020.0.0
 
-# Data Loading and Datasets
 datasets>=2.0.0
-
-# Visualization
 matplotlib>=3.4.0
-
-# Utilities
 tqdm>=4.62.0
 pyyaml>=5.4.0
-
-# Experiment Tracking and Model Management
 wandb>=0.12.0
 huggingface-hub>=0.10.0
 
-# Custom Dependencies
-# Note: StructureCloud is a custom package that may need to be installed separately
-# Install from: https://github.com/user/StructureCloud (add actual repository link)
-# StructureCloud
-
-# Optional - CUDA Runtime (uncomment if needed)
-# nvidia-cuda-runtime-cu11
-# nvidia-cuda-runtime-cu12

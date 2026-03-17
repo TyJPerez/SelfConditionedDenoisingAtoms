@@ -13,7 +13,7 @@ import torch.nn.functional as F
 from models.ET_models.utils import (
     NeighborEmbedding,
     CosineCutoff,
-    # Distance,
+
     rbf_class_mapping,
     act_class_mapping,
 )
@@ -39,10 +39,10 @@ class EdgeFeatureInit(nn.Module):
     def reset_parameters(self):
         self.lin_rbf_0.reset_parameters()
         self.lin.reset_parameters()
-        # self.lin_rbf_1.reset_parameters()
+
         glorot_orthogonal(self.lin_rbf_1.weight, scale=2.0)
 
-    # TODO add 2D edge information
+
     def forward(self, node_embs, edge_index, edge_weight):
         rbf = self.distance_exp(edge_weight)
         rbf0 = self.act(self.lin_rbf_0(rbf))
@@ -162,18 +162,18 @@ class UpdateE(torch.nn.Module):
             e1 = layer(e1)
         e2 = self.lin_rbf(rbf0) * e1
 
-    
-        # NOTE layernorm for large value in e1 and e2
+
+
         e1 = self.e0_norm(e1)
         e2 = self.e1_norm(e2)
 
         return e1, e2
 
 
-# def check_for_nan(module, gin, gout):
-#     if gin[0].isnan().any():
-#         gin.isnan().any()
-#         print("NaN values found in gradients!")
+
+
+
+
 
 def check_for_nan(module, grad_input, grad_output):
     """Check for NaN values in gradients - updated for full backward hook"""
@@ -181,7 +181,7 @@ def check_for_nan(module, grad_input, grad_output):
         for i, grad in enumerate(grad_input):
             if grad is not None and grad.isnan().any():
                 print(f"NaN values found in grad_input[{i}]!")
-    
+
     if grad_output is not None and len(grad_output) > 0:
         for i, grad in enumerate(grad_output):
             if grad is not None and grad.isnan().any():
@@ -207,8 +207,8 @@ class EMB(torch.nn.Module):
 
 
 
-# fuse 2D infomation inside
-class CondFrad(nn.Module):  # TorchMD_ETF2D
+
+class CondFrad(nn.Module):
     r"""The TorchMD equivariant Transformer architecture.
 
     Args:
@@ -263,29 +263,29 @@ class CondFrad(nn.Module):  # TorchMD_ETF2D
         cutoff_upper=5.0,
         max_z=100,
         max_num_neighbors=32,
-        layernorm_on_vec= "whitened", # 
+        layernorm_on_vec= "whitened",
         md17=False,
 
         seperate_noise=False,
-        num_spherical=3, 
-        num_radial=6, 
+        num_spherical=3,
+        num_radial=6,
         envelope_exponent=5,
         int_emb_size=64,
-        basis_emb_size_dist=8, 
-        basis_emb_size_angle=8, 
+        basis_emb_size_dist=8,
+        basis_emb_size_angle=8,
         basis_emb_size_torsion=8,
         num_before_skip=1,
         num_after_skip=2,
 
         ##### added for SCD #####
-        p_droppath=0.1,  # probability of dropping input conditioning
-        p_dropcond=0.2,  # probability of dropping input conditioning and replacing with mask token
+        p_droppath=0.1,
+        p_dropcond=0.2,
         vec_prenorm=True,
         inv_post_norm = False,
         #### added for SCD #####
 
-        
-        legacy=False, ### force use of legacy graph generation
+
+        legacy=False,
 
     ):
         super().__init__()
@@ -321,7 +321,7 @@ class CondFrad(nn.Module):  # TorchMD_ETF2D
 
         act_class = act_class_mapping[activation]
 
-        if self.max_z > 200: # lba
+        if self.max_z > 200:
             max_z = self.max_z // 2
             self.embedding = nn.Embedding(max_z, hidden_channels // 2)
             self.type_embedding = nn.Embedding(2, hidden_channels // 2)
@@ -329,30 +329,30 @@ class CondFrad(nn.Module):  # TorchMD_ETF2D
             self.embedding = nn.Embedding(self.max_z, hidden_channels)
 
 
-        self.legacy = legacy #FIXME
+        self.legacy = legacy
         self.distance = Distance(
             cutoff_lower,
             cutoff_upper,
             max_num_neighbors=max_num_neighbors,
-            # max_num_pairs=-max_num_neighbors,
+
             return_vecs=True,
             loop=True,
         )
 
         if self.legacy:
             print('===== using legacy graph generation =====')
-        ###### added to support non-ortho periodic crystals ######
+
         self.max_num_neighbors = max_num_neighbors
         self.pbc_graph_gen = GraphGenerator(
             cutoff=self.cutoff_upper,
             max_neighbors=self.max_num_neighbors,
             self_loops=True,
             neighbor_method="brute",
-            # neighbor_method="grid",
+
             enforce_max_neighbors_strictly=False,
             alt_cell_key='box'
         )
-        ###### added to support non-ortho periodic crystals ######
+
 
 
         self.distance_expansion = rbf_class_mapping[rbf_type](
@@ -361,7 +361,7 @@ class CondFrad(nn.Module):  # TorchMD_ETF2D
         self.neighbor_embedding = (
             NeighborEmbedding(
                 hidden_channels, num_rbf, cutoff_lower, cutoff_upper, self.max_z
-            ) #.jittable()
+            )
             if neighbor_embedding
             else None
         )
@@ -372,7 +372,7 @@ class CondFrad(nn.Module):  # TorchMD_ETF2D
         if not self.md17:
             self.vec_norms = nn.ModuleList()
             self.x_norms = nn.ModuleList()
-            
+
         for _ in range(num_layers):
             layer = CondEquivariantMultiHeadAttention(
                 hidden_channels,
@@ -385,17 +385,17 @@ class CondFrad(nn.Module):  # TorchMD_ETF2D
                 cutoff_upper,
                 p_droppath=p_droppath,
                 vec_prenorm=vec_prenorm,
-            ) #.jittable()
+            )
             self.attention_layers.append(layer)
             if not self.md17:
                 self.vec_norms.append(EquivariantLayerNorm(hidden_channels))
                 self.x_norms.append(nn.LayerNorm(hidden_channels))
 
         #### MODIFICATIONS FOR SCD ####
-        self.p_cond_dropout = p_dropcond # probability of dropping input conditioning and replacing with mask token
-        self.drop_cond = DropCond(dim=hidden_channels, p_drop=self.p_cond_dropout) # drop and expands conditinal embedding to node level
-        self.clip_value = 1e4 #100.0  # used to improve stability of torchnet architecture
-        # self.clip_value = float("inf") # FIXME: temprorary
+        self.p_cond_dropout = p_dropcond
+        self.drop_cond = DropCond(dim=hidden_channels, p_drop=self.p_cond_dropout)
+        self.clip_value = 1e4
+
         self.ignore_cond = False
         #### MODIFICATIONS FOR SCD ####
 
@@ -406,31 +406,31 @@ class CondFrad(nn.Module):  # TorchMD_ETF2D
             assert not self.layernorm_on_vec
             self.out_norm_vec = EquivariantLayerNorm(hidden_channels)
 
-        
+
 
 
         self.init_e = EdgeFeatureInit(self.distance_expansion, act_class, num_rbf, hidden_channels)
-        
-        #  + 1
+
+
         self.update_es = torch.nn.ModuleList([
             UpdateE(hidden_channels, int_emb_size, basis_emb_size_dist, basis_emb_size_angle, basis_emb_size_torsion, num_spherical, num_radial, num_before_skip, num_after_skip, act_class) for _ in range(num_layers)])
         self.emb = EMB(num_spherical, num_radial, cutoff_upper, envelope_exponent)
 
-        # h = self.embedding.register_backward_hook(check_for_nan)
-        # h = self.embedding.register_full_backward_hook(check_for_nan) # updated line
 
-        
+
+
+
         if self.layernorm_on_vec:
             if self.layernorm_on_vec == "whitened":
                 self.out_norm_vec = EquivariantLayerNorm(hidden_channels)
             else:
                 raise ValueError(f"{self.layernorm_on_vec} not recognized.")
-            
+
         self.reset_parameters()
-    
+
     def ignore_conditioning(self, ignore=True):
         self.ignore_cond = ignore
-    
+
     def freeze_embeddings(self, freeze=True):
         self.embedding.weight.requires_grad = not freeze
         self.drop_cond.mask_token.requires_grad = not freeze
@@ -448,13 +448,13 @@ class CondFrad(nn.Module):  # TorchMD_ETF2D
 
     def init_graph(self, pos, batch, data_batch=None):
         box = None
-        if self.legacy:  # this is fast non-periodic graph generation
+        if self.legacy:
             edge_index, edge_weight, edge_vec = self.distance(pos, batch)
             return edge_index, edge_weight, edge_vec
 
         if data_batch is not None:
 
-            #check if data_batch already has a precomputed graph - faster than computing on the fly
+
             if hasattr(data_batch, 'edge_index') and data_batch.edge_index is not None:
                 assert hasattr(data_batch, 'edge_distance') and data_batch.edge_distance is not None, (
                     "data_batch has edge_index but is missing edge_distance"
@@ -468,7 +468,7 @@ class CondFrad(nn.Module):  # TorchMD_ETF2D
                 edge_vec = data_batch.edge_distance_vec
                 return edge_index, edge_weight, edge_vec
 
-            #Generate graph using custom PBC graph generator - NOTE: this is slower than the optimized Legacy graph generation
+
             out = self.pbc_graph_gen(data_batch)
             edge_index = out["edge_index"]
             edge_weight = out["edge_distance"]
@@ -481,20 +481,20 @@ class CondFrad(nn.Module):  # TorchMD_ETF2D
 
         return edge_index, edge_weight, edge_vec
 
-    def forward(self, 
-                z, 
-                pos, 
+    def forward(self,
+                z,
+                pos,
                 batch,
                 box = None,
                 cond=None,  ### SCD
-                return_e=False, 
+                return_e=False,
                 type_idx=None,
-                
-                #TODO: handle graph_batch input
-                graph_batch=None,  # TODO: handle graph_batch input
+
+
+                graph_batch=None,
                 ):
 
-        
+
         x = self.embedding(z)
         if type_idx is not None:
             type_embedding = self.type_embedding(type_idx)
@@ -502,16 +502,16 @@ class CondFrad(nn.Module):  # TorchMD_ETF2D
 
         num_nodes=z.size(0)
 
-        # edge_index, edge_weight, edge_vec = self.distance(pos, batch)
-        
-        #### Handle graph generation for periodic systems ####
+
+
+
         edge_index, edge_weight, edge_vec = self.init_graph(pos, batch, data_batch=graph_batch)
 
-        # init edge feature
-        e = self.init_e(x, edge_index, edge_weight) # contains e1 and e2  
+
+        e = self.init_e(x, edge_index, edge_weight)
 
 
-        # mask the self loop edge
+
         mask = edge_index[0] != edge_index[1]
         no_loop_edge_index = edge_index[:, mask]
 
@@ -525,10 +525,10 @@ class CondFrad(nn.Module):  # TorchMD_ETF2D
             edge_vec is not None
         ), "Distance module did not return directional information"
 
-        edge_attr = self.distance_expansion(edge_weight) # replace with f2d
+        edge_attr = self.distance_expansion(edge_weight)
         mask = edge_index[0] != edge_index[1]
         edge_vec[mask] = edge_vec[mask] / torch.norm(edge_vec[mask], dim=1).unsqueeze(1)
-        
+
 
         if self.neighbor_embedding is not None:
             x = self.neighbor_embedding(z, x, edge_index, edge_weight, edge_attr)
@@ -538,35 +538,21 @@ class CondFrad(nn.Module):  # TorchMD_ETF2D
         update_e0, epdate_e1 = e[0][mask], e[1][mask]
 
         #### MODIFICATIONS FOR SCD ####
-        c = self.drop_cond(cond, batch)  # expand cond to node level, and do dropout
-        #clip inputs for stability
-        clip_scale = self.clip_value #100.0  #8.0
-        c = c.clamp(min=-clip_scale, max=clip_scale)  # clamp to [-clip_scale, clip_scale]
+        c = self.drop_cond(cond, batch)
+
+        clip_scale = self.clip_value
+        c = c.clamp(min=-clip_scale, max=clip_scale)
         if self.ignore_cond:
             c = None
         #### MODIFICATIONS FOR SCD ####
 
         for lidx, attn in enumerate(self.attention_layers):
-            
-            # update edge feature
-            # update e without self loop
             update_e0, epdate_e1 = self.update_es[lidx]((update_e0, epdate_e1), emb, idx_kj, idx_ji)
-            # replace edge_attr with the edge feature
-            # NOTE: use e2 to update node feature
-            edge_e1 = torch.clone(e[1]) # This function is differentiable, so gradients will flow back from the result of this operation to e[1]
+
+            edge_e1 = torch.clone(e[1])
             edge_e1[mask] = epdate_e1
-
-            # x_before_attn = x.clone()
-            # vec_before_attn = vec.clone()
-
             dx, dvec = attn(x, vec, edge_index, edge_weight, edge_e1, edge_vec, cond=c)
-            # if not self.md17:
-            #     dx = self.x_norms[lidx](dx)
-            x = x + dx # may be nan
-            # if not self.md17:
-            #     x = self.x_norms[lidx](x)
-            # if not self.md17:
-            #     dvec = self.vec_norms[lidx](dvec)
+            x = x + dx
             vec = vec + dvec
             if not self.md17:
                 vec = self.vec_norms[lidx](vec)
@@ -574,11 +560,10 @@ class CondFrad(nn.Module):  # TorchMD_ETF2D
                 print('nan happens1111')
         if torch.isnan(x).sum():
             print('nan happens11112222')
-        # x = torch.clip(x, min=-1e+7, max=1e+7)
         xnew = self.out_norm(x)
         if torch.isnan(xnew).sum():
             print('nan happens111122223333')
-            # import pdb; pdb.set_trace()# print('nan happens2222')
+
         if self.layernorm_on_vec:
             vec = self.out_norm_vec(vec)
         if self.seperate_noise:
@@ -586,7 +571,7 @@ class CondFrad(nn.Module):  # TorchMD_ETF2D
             return xnew, vec, nvec, z, pos, batch
 
         if return_e:
-            e_clone_0 = torch.clone(e[0]) # clone is differentiable
+            e_clone_0 = torch.clone(e[0])
             e_clone_1 = torch.clone(e[1])
             e_clone_0[mask], e_clone_1[mask] = update_e0, epdate_e1
             return xnew, vec, z, pos, batch, e, edge_index
@@ -611,7 +596,7 @@ class CondFrad(nn.Module):  # TorchMD_ETF2D
         )
 
 
-class CondEquivariantMultiHeadAttention(MessagePassing): # EquivariantMultiHeadAttention
+class CondEquivariantMultiHeadAttention(MessagePassing):
     def __init__(
         self,
         hidden_channels,
@@ -641,15 +626,12 @@ class CondEquivariantMultiHeadAttention(MessagePassing): # EquivariantMultiHeadA
         self.hidden_channels = hidden_channels
         self.head_dim = hidden_channels // num_heads
 
-        # self.layernorm = nn.LayerNorm(hidden_channels)
-
         #### MODIFICATIONS FOR SCD ####
         self.conditional_ln = adaLN2(dim=hidden_channels)
         self.joint_droppath = JointDropPath(drop_prob=p_droppath)
-        self.vec_norm = DyT(hidden_channels) # added for stability
-        self.vec_prenorm = vec_prenorm # whether or not to apply the prenorm
+        self.vec_norm = DyT(hidden_channels)
+        self.vec_prenorm = vec_prenorm
         #### MODIFICATIONS FOR SCD ####
-
 
         self.act = activation()
         self.attn_activation = act_class_mapping[attn_activation]()
@@ -659,26 +641,24 @@ class CondEquivariantMultiHeadAttention(MessagePassing): # EquivariantMultiHeadA
         self.k_proj = nn.Linear(hidden_channels, hidden_channels)
         self.v_proj = nn.Linear(hidden_channels, hidden_channels * 3)
         self.o_proj = nn.Linear(hidden_channels, hidden_channels * 3)
-
         self.vec_proj = nn.Linear(hidden_channels, hidden_channels * 3, bias=False)
 
         self.dk_proj = None
         if distance_influence in ["keys", "both"]:
-            # self.dk_proj = nn.Linear(num_rbf, hidden_channels)
+
             self.dk_proj = nn.Linear(hidden_channels, hidden_channels)
 
         self.dv_proj = None
         if distance_influence in ["values", "both"]:
-            # self.dv_proj = nn.Linear(num_rbf, hidden_channels * 3)
+
             self.dv_proj = nn.Linear(hidden_channels, hidden_channels * 3)
 
         self.reset_parameters()
 
     def reset_parameters(self):
-        # self.layernorm.reset_parameters()
 
         ### Added for SCD ###
-        self.vec_norm.reset_parameters() 
+        self.vec_norm.reset_parameters()
         self.conditional_ln.reset_parameters()
         ### Added for SCD ###
 
@@ -705,12 +685,11 @@ class CondEquivariantMultiHeadAttention(MessagePassing): # EquivariantMultiHeadA
     ### Added for SCD ###
 
     def forward(self, x, vec, edge_index, r_ij, f_ij, d_ij, cond=None):
-        # x = self.layernorm(x)
 
         #### MODIFICATIONS FOR SCD ####
-        x, gate_x = self.conditional_ln(x, cond) # apply conditional layernorm
+        x, gate_x = self.conditional_ln(x, cond)
         if self.vec_prenorm:
-            vec = self.vec_norm(vec)  # added for stability
+            vec = self.vec_norm(vec)
         #### MODIFICATIONS FOR SCD ####
 
         q = self.q_proj(x).reshape(-1, self.num_heads, self.head_dim)
@@ -732,7 +711,7 @@ class CondEquivariantMultiHeadAttention(MessagePassing): # EquivariantMultiHeadA
             else None
         )
 
-        # propagate_type: (q: Tensor, k: Tensor, v: Tensor, vec: Tensor, dk: Tensor, dv: Tensor, r_ij: Tensor, d_ij: Tensor)
+
         x, vec = self.propagate(
             edge_index,
             q=q,
@@ -759,24 +738,24 @@ class CondEquivariantMultiHeadAttention(MessagePassing): # EquivariantMultiHeadA
         return dx, dvec
 
     def message(self, q_i, k_j, v_j, vec_j, dk, dv, r_ij, d_ij):
-        # attention mechanism
+
         if dk is None:
             attn = (q_i * k_j).sum(dim=-1)
         else:
             attn = (q_i * k_j * dk).sum(dim=-1)
 
-        # attention activation function
+
         attn = self.attn_activation(attn) * self.cutoff(r_ij).unsqueeze(1)
 
-        # value pathway
+
         if dv is not None:
             v_j = v_j * dv
         x, vec1, vec2 = torch.split(v_j, self.head_dim, dim=2)
 
-        # update scalar features
-        # x = x * attn.unsqueeze(2)
+
+
         x = x * F.softmax(attn, dim=-1).unsqueeze(2)
-        # update vector features
+
         vec = vec_j * vec1.unsqueeze(1) + vec2.unsqueeze(1) * d_ij.unsqueeze(
             2
         ).unsqueeze(3)
@@ -828,7 +807,7 @@ class EquivariantLayerNorm(nn.Module):
                 torch.empty(self.normalized_shape, **factory_kwargs)
             )
         else:
-            self.register_parameter("weight", None) # Without bias term to preserve equivariance!
+            self.register_parameter("weight", None)
 
         self.reset_parameters()
 
@@ -866,11 +845,11 @@ class EquivariantLayerNorm(nn.Module):
         )
 
     def forward(self, input: torch.Tensor) -> torch.Tensor:
-        input = input.to(torch.float64) # Need double precision for accurate inversion.
+        input = input.to(torch.float64)
         input = self.mean_center(input)
-        # We use different diagonal elements in case input matrix is approximately zero,
-        # in which case all singular values are equal which is problematic for backprop.
-        # See e.g. https://pytorch.org/docs/stable/generated/torch.svd.html
+
+
+
         reg_matrix = (
             torch.diag(torch.tensor([1.0, 2.0, 3.0]))
             .unsqueeze(0)
