@@ -1,5 +1,7 @@
-# SelfConditionedDenoising
-Self-Conditioned Denoising for molecular pretraining
+# Self-Conditioned Denoising for Atomistic Representation Learning
+This is the official implementation for the paper:
+[Self-Conditioned Denoising for Atomistic Representation Learning](https://insert-the-link-to-the-paper-here.com)
+
 
 ## Setup 
 1. use the requirements.txt to set up your environment
