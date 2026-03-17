@@ -19,7 +19,6 @@ num_workers: 6
 #choose model architecture here
 model_config: configs/model_configs/scd.yaml
 
-
 energy_weight: 0.0
 force_weight: 1.0
 ema_alpha_dy: 1.0

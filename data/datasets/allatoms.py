@@ -6,9 +6,6 @@ from data.datasets.geom import GEOM_dataset
 from data.datasets.pcqm4mv2 import PCQM4MV2_XYZ
 from data.datasets.sair import SampledSAIRDataset
 
-# from data.datasets.transforms import AddStandardKeys, RandomCellRepeats
-# from torch_geometric.transforms import Compose
-
 '''
 NOTE: The all atoms dataset requires the StructureCloud library, which is not yet released.
 but StructureCloud will be coming soon!

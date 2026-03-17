@@ -12,7 +12,7 @@ model_config: configs/model_configs/scd.yaml
 dataset: QM9
 dataset_root: tmp/qm9
 dataset_arg : homo
-train_size: 110000 #DEBUG
+train_size: 110000 
 test_size: null
 val_size: 10000
 batch_size: 128
@@ -23,7 +23,7 @@ num_workers: 6
 splits: null
 standardize: true # multiply prediction by dataset std and add mean
 
-energy_weight: 1.0 # weight on y loss
+energy_weight: 1.0 
 force_weight: 1.0
 ema_alpha_dy: 1.0
 ema_alpha_y: 1.0
@@ -40,14 +40,12 @@ lr_min: 1.0e-07
 lr_patience: 15
 lr_warmup_steps: 10000 
 lr_cosine_length: 300000
-num_epochs: 3000 # DEBUG
-num_steps: 300000 #DEBUG
+num_epochs: 3000 
+num_steps: 300000
 precision: 32
 
 save_interval: 5 
 test_interval: 1
-
-
 
 pretraining: false
 self_cond: false

@@ -55,7 +55,7 @@ pretraining: true
 self_cond: true
 weight_decay: 0.05
 
-momentum_update: False # Turn on 
+momentum_update: False 
 model_momentum: 0.996
 val_ema_model: False
 

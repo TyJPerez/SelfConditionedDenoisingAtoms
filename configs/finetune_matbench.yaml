@@ -1,6 +1,4 @@
 
-## NOTE: This config requires StructureCloud, which we will release shortly! 
-# but for now this config is not runnable.
 
 log_dir: experiments/
 load_model: null
@@ -14,13 +12,12 @@ set_head_agg: mean
 
 ## DATASET & LOADER INPUTS ###
 dataset: MBgap
-dataset_root: null # FIXME
+dataset_root: null 
 dataset_arg : 0 # fold selection
 predefined_splits: true
+prior_model: null
 
-prior_model: null #PositiveOutput
-
-train_size: null #DEBUG
+train_size: null 
 test_size: null
 val_size: null
 
@@ -30,9 +27,9 @@ seed: 1
 num_workers: 8
 
 splits: null
-standardize: True # FIXME - Try this off
+standardize: True
 
-energy_weight: 1.0 # weight on y loss
+energy_weight: 1.0 
 force_weight: 1.0
 ema_alpha_dy: 1.0
 ema_alpha_y: 1.0
@@ -50,8 +47,8 @@ lr_min: 1.0e-07
 lr_patience: 15
 lr_warmup_steps: 10000 
 lr_cosine_length: 300000
-num_epochs: 3000 # DEBUG
-num_steps: 300000 #DEBUG
+num_epochs: 3000 
+num_steps: 300000
 precision: 32
 
 save_interval: 5 
@@ -62,10 +59,10 @@ test_interval: 1
 pretraining: false
 self_cond: false
 
-weight_decay: 0.01 # Try lowering to 1e5
+weight_decay: 0.01 
 droppath_warmup: True
 init_droppath: 0.15
-final_droppath: 0.0 #0.01
+final_droppath: 0.0 
 beta1: 0.995
 
 momentum_update: False

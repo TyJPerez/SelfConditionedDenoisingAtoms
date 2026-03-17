@@ -90,18 +90,17 @@ python train.py --conf configs/finetune_qm9.yaml --load-model 'experiments/{NAME
 
 ## Supported Datasets
 
-| Dataset | Domain | Config / Loader |
+| Dataset | Domain | Available Config |
 |---|---|---|
 | PCQM4MV2 | Molecules | `pretrain_pcq.yaml` |
+| GEOM | Drug-like conformers | *Requires Structure Cloud* |
 | Alex-MP-20 | Inorganic materials | `pretrain_amp20.yaml` |
+| OMol25 | 4M subset | use 'OMOL25' in `pretrain_pcq.yaml` |
 | QM9 | Small molecules | `finetune_qm9.yaml` |
-| Matbench | Materials benchmarks | `finetune_matbench.yaml` |
-| MD17 | Molecular dynamics | `data/datasets/md17.py` |
-| GEOM | Drug-like conformers | `data/datasets/geom.py` |
-| OMol25 | Open molecules | `data/datasets/omol25.py` |
+| Matbench | Inorganic Materials | `finetune_matbench.yaml` |
 | LBA | Ligand binding affinity | `data/datasets/lba.py` |
 
-NOTE: Some loaders require our unleaeased helper library Structure Cloud. Coming soon! 
+NOTE: Some datasets require our unleaeased helper library Structure Cloud. Coming soon! 
 
 ---
 

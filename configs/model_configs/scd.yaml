@@ -18,15 +18,15 @@ derivative: false
 max_z: 118
 
 derivative: false
-layernorm_on_vec: False #True # slow and not helpful
+layernorm_on_vec: False
 
-p_dropcond: 0.2 # probability of dropping conditioning vector
-p_droppath: 0.1 # probability of dropping path (stochastic depth)
+p_dropcond: 0.2 
+p_droppath: 0.1 
 
 inv_post_norm: True
-vec_post_norm: False # way too slow
+vec_post_norm: False 
 vec_prenorm: True
-emb_agg : sum # TRY mean version
+emb_agg : sum 
 vector_cutoff: True 
 
 

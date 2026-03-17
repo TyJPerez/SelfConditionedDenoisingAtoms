@@ -245,20 +245,4 @@ class alexmp20_dataset(AlexMP20_dataset):
             transform=transform,
             label=None,
             **kwargs)
-        
-        # transforms = [
-        #     AddStandardKeys(),
-        #     RandomCellRepeats(
-        #         p_rep=p_rep,
-        #         rep_iters=rep_iters,
-        #         min_atoms=min_atoms,
-        #         max_reps_per_axis=2,
-        #     )]
-        #check if kwargs has a transform, if not set a default one
-        # if 'transform' in kwargs:
-        #     if kwargs['transform'] is not None:
-        #         transforms.append(kwargs['transform'])
-
-        # kwargs['transform'] = Compose(transforms)
-
-        # super().__init__(**kwargs)
+     

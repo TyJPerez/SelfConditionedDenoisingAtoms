@@ -17,8 +17,6 @@ except ImportError:
 
 from torch.utils.data import Dataset
 
-
-### TODO: make preprocessing multiprocessing compatible
 import multiprocessing
 from time import time
 from multiprocessing import Pool

@@ -5,7 +5,7 @@ num_layers: 6
 num_heads: 8
 num_rbf: 32
 rbf_type: expnorm
-trainable_rbf: false # consider changing
+trainable_rbf: false
 neighbor_embedding: true
 max_num_neighbors: 32
 distance_influence: both
@@ -17,13 +17,13 @@ cutoff_upper: 5.0
 derivative: false
 max_z: 118
 
-derivative: false # Turn this on for gradient based force prediction compatibility
+derivative: false 
 layernorm_on_vec: True
 
 p_dropcond: 0.2 
 p_droppath: 0.1
 inv_post_norm: True
-vec_post_norm: False #unnecessary and slow, leave off
+vec_post_norm: False 
 vec_prenorm: True
 emb_agg : sum
 vector_cutoff: True  
