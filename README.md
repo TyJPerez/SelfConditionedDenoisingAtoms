@@ -95,10 +95,10 @@ python train.py --conf configs/finetune_qm9.yaml --load-model 'experiments/{NAME
 | PCQM4MV2 | Molecules | `pretrain_pcq.yaml` |
 | GEOM | Drug-like conformers | *Requires Structure Cloud* |
 | Alex-MP-20 | Inorganic materials | `pretrain_amp20.yaml` |
-| OMol25 | 4M subset | use 'OMOL25' in `pretrain_pcq.yaml` |
+| OMol25 | Organic Molecules | use 'OMOL25' in `pretrain_pcq.yaml` |
 | QM9 | Small molecules | `finetune_qm9.yaml` |
 | Matbench | Inorganic Materials | `finetune_matbench.yaml` |
-| LBA | Ligand binding affinity | `data/datasets/lba.py` |
+| LBA | Proteins | `data/datasets/lba.py` |
 
 NOTE: Some datasets require our unleaeased helper library Structure Cloud. Coming soon! 
 
