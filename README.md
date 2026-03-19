@@ -151,31 +151,6 @@ Note: `noise_in_loader=True` does not necessarily apply positional noise if nois
 | Molecule training without compiled extension | `noise_in_loader=True`, `allow_periodic=False` | Keeps training functional without CUDA extension build. |
 | Periodic/materials training | `noise_in_loader=True`, `allow_periodic=True` | Periodic edges are built in loader path. |
 
-### Self-conditioning batch contract
-
-When `self_cond=True` and loader-side transforms are active:
-
-- The data pipeline may return paired graph views per sample (instead of a single graph).
-- Training uses tuple-aware clipping internally (`TupleBatchClipper`) in this mode.
-- If you add custom datasets/transforms, keep this paired-view contract intact for SCD runs.
-
----
-
-## Evaluation Semantics
-
-During `fit`, validation and test are not fully separate in this codebase:
-
-- Every epoch, the validation loader runs.
-- Additionally, when `current_epoch % test_interval == 0` (and training has started), a test loader is appended and evaluated in the same validation phase.
-
-This means reported metrics may include periodic test-set evaluation during training rather than test-only-at-end behavior.
-
-### Recommended settings for clean comparisons
-
-- Set `allow_test_clipping: false` for strict evaluation comparability.
-- Keep `test_interval` explicit in configs so readers know how often test metrics are sampled during fit.
-- For final reporting, run a dedicated test pass after training and treat that as the headline number.
-
 ---
 
 ## Citation
