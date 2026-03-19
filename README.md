@@ -3,7 +3,7 @@
 This is the official implementation for the paper:
 [**Self-Conditioned Denoising for Atomistic Representation Learning**](https://arxiv.org/pdf/2603.17196)
 
-Self-conditioned denoising (SCD) is a self-supervised pretraining method for atomistic data that is domain agnostic (small molecules, periodic materials, and/or protiens/biomolecules), and benefits from pretraining with both ground state and higher energy structures. This repo provides a simple implimentation of SCD using TorchMD-Net as the backbone and access to pretrained models through huggingface.
+Self-conditioned denoising (SCD) is a self-supervised pretraining method for atomistic data that is domain agnostic (small molecules, periodic materials, and/or proteins/biomolecules) and benefits from pretraining with both ground state and higher energy structures. This repository provides a simple implementation of SCD using TorchMD-Net as the backbone and access to pretrained models through Hugging Face.
  
 Pretrained checkpoints are available on HuggingFace for two domains:
 
@@ -32,7 +32,7 @@ cd models/ET_models && python setup.py build_ext --inplace
 
 A general graph creation method that also supports periodic materials is available without compilation. See `examples.ipynb` for details on using either method.
 
-if you do not want to use the compiled TorchMD-Net Kernel, set noise_in_loader=True in the config file for you select run.
+If you do not want to use the compiled TorchMD-Net Kernel, set noise_in_loader=True in the config file for you select run.
 
 ---
 
@@ -61,7 +61,7 @@ The model forward pass returns a dictionary with the following keys:
 Pretrain a model using SCD on the PCQM4MV2 dataset:
 ```bash
 python train.py --conf configs/pretrain_pcq.yaml # use faster graph creation
-python train.py --conf configs/pretrain_pcq.yaml --noise_in_loader True # if torchnetmd kernal is not compiled
+python train.py --conf configs/pretrain_pcq.yaml --noise_in_loader True # if torchnetmd kernel is not compiled
 ```
 
 Pretrain a model using SCD on the Alex-MP-20 dataset:
@@ -104,14 +104,14 @@ Note, if you did not compile the torchnet graph kernel us must set `--noise_in_l
 | Matbench | Inorganic Materials | `finetune_matbench.yaml` |
 | LBA | Proteins | `data/datasets/lba.py` |
 
-NOTE: Some datasets require our unleaeased helper library Structure Cloud. Coming soon! 
+NOTE: Some datasets require our unleashed helper library Structure Cloud. Coming soon! 
 
 ---
 
 ## Batch Clipping
 Graph batch memory can vary a lot across steps. Batch clipping keeps each batch under a node budget to reduce OOM risk while maintaining good GPU utilization.
 
-In this repo, clipping is handled automatically by `BatchClipper` during training. If a batch is too large, extra samples are moved to an internal cache and re-used in later smaller batches.
+In this repo, clipping is handled automatically by `BatchClipper` during training. If a batch is too large, extra samples are moved to an internal cache and reused in later smaller batches.
 
 Set these config parameters to control clipping behavior:
 
@@ -141,7 +141,7 @@ You can set these directly in your run config (for example, `configs/pretrain_*.
 | TorchMD-Net compiled kernel (fastest) | `False` | `False` | Preferred for non-periodic molecules when extension is compiled. |
 | Loader-side graph creation | `True` | `False` or `True` | Works without compiled extension and is required for periodic workflows. |
 
-Note: `noise_in_loader=True` does not necessarily apply positional noise if noise scale is set to zero.
+Note: `noise_in_loader=True` does not necessarily apply positional noise if the noise scale is set to zero.
 
 ### Which mode should I use?
 
