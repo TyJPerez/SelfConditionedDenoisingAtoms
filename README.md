@@ -32,6 +32,8 @@ cd models/ET_models && python setup.py build_ext --inplace
 
 A general graph creation method that also supports periodic materials is available without compilation. See `examples.ipynb` for details on using either method.
 
+if you do not want to use the compiled TorchMD-Net Kernel, set noise_in_loader=True in the config file for you select run.
+
 ---
 
 ## Loading and Using a Pretrained Model
@@ -58,7 +60,8 @@ The model forward pass returns a dictionary with the following keys:
 
 Pretrain a model using SCD on the PCQM4MV2 dataset:
 ```bash
-python train.py --conf configs/pretrain_pcq.yaml
+python train.py --conf configs/pretrain_pcq.yaml # use faster graph creation
+python train.py --conf configs/pretrain_pcq.yaml --noise_in_loader True # if torchnetmd kernal is not compiled
 ```
 
 Pretrain a model using SCD on the Alex-MP-20 dataset:
@@ -81,6 +84,7 @@ Load a pretrained checkpoint from a local path:
 ```bash
 python train.py --conf configs/finetune_qm9.yaml --load-model 'experiments/{NAME}/{checkpoint}.ckpt' --job-id pretrained_qm9-homo
 ```
+Note, if you did not compile the torchnet graph kernel us must set `--noise_in_loader True`
 
 > The default finetuning target for QM9 is `homo`. This can be changed in `configs/finetune_qm9.yaml`.
 
@@ -101,6 +105,34 @@ python train.py --conf configs/finetune_qm9.yaml --load-model 'experiments/{NAME
 | LBA | Proteins | `data/datasets/lba.py` |
 
 NOTE: Some datasets require our unleaeased helper library Structure Cloud. Coming soon! 
+
+---
+
+## Batch Clipping
+Graph batch memory can vary a lot across steps. Batch clipping keeps each batch under a node budget to reduce OOM risk while maintaining good GPU utilization.
+
+In this repo, clipping is handled automatically by `BatchClipper` during training. If a batch is too large, extra samples are moved to an internal cache and re-used in later smaller batches.
+
+Set these config parameters to control clipping behavior:
+
+- `max_nodes_per_batch`: **main clipping limit** (max total nodes allowed per batch). If unset, clipping is disabled.
+- `batch_clipper_cache_size`: max number of clipped samples to keep in cache for refill.
+- `allow_test_clipping`: if `True`, clipping is also applied on validation/test loaders. For strict eval comparability, set this to `False`.
+
+Example:
+
+```yaml
+max_nodes_per_batch: 4000
+batch_clipper_cache_size: 1000
+allow_test_clipping: false
+```
+
+You can set these directly in your run config (for example, `configs/pretrain_*.yaml` or `configs/finetune_*.yaml`) or override from CLI:
+
+```bash
+--max-nodes-per-batch 4000 --batch-clipper-cache-size 1000 --allow-test-clipping False
+```
+
 
 ---
 

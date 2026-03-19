@@ -71,8 +71,9 @@ droppath_warmup: False
 
 graph_cutoff: 5.0
 
-noise_in_loader: False
+noise_in_loader: True
 allow_periodic: True
+
 p_cell_repeat: 0.5
 cell_repeat_iters: 2
 

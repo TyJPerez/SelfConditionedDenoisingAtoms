@@ -51,6 +51,9 @@ pretraining: true
 self_cond: true
 noise_scale: 0.04
 
+noise_in_loader: False # Turn this to True if you want to run these models without compiling the torchnet graph kernal
+allow_periodic: False # Turn this to True if you want to allow for periodic inputs
+
 momentum_update: False
 model_momentum: 0.996
 val_ema_model: False

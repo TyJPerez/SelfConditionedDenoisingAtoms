@@ -9,7 +9,7 @@ from copy import deepcopy
 
 from pytorch_lightning import LightningModule
 
-from models.model_helper2 import create_model, get_model_checkpoint, load_model
+from models.model_helper import create_model, get_model_checkpoint, load_model
 from .utils.graphaug import GraphAugmenter
 # from models.modules.contrastive import ContrastiveLoss
 from data.batchclipper import BatchClipper, TupleBatchClipper

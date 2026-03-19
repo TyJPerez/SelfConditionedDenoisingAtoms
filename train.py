@@ -14,8 +14,8 @@ from data.loaders import DataModule
 from data.utils import LoadFromFile, LoadFromCheckpoint, save_argparse, number
 
 from tqdm import tqdm
-from models.trainer2 import LTrainer
-from models.model_helper2 import get_model_checkpoint, create_prior_models
+from models.trainer import LTrainer
+from models.model_helper import get_model_checkpoint, create_prior_models
 from models.callbacks import ParityPlot, LimitRun
 from pytorch_lightning.callbacks import ModelCheckpoint, Callback
 
