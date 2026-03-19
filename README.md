@@ -1,7 +1,7 @@
 # Self-Conditioned Denoising for Atomistic Representation Learning
 
 This is the official implementation for the paper:
-**Self-Conditioned Denoising for Atomistic Representation Learning** *(arxiv link coming soon)*
+[**Self-Conditioned Denoising for Atomistic Representation Learning**](https://arxiv.org/pdf/2603.17196)
 
 Self-conditioned denoising (SCD) is a self-supervised pretraining method for atomistic data that is domain agnostic (small molecules, periodic materials, and/or protiens/biomolecules), and benefits from pretraining with both ground state and higher energy structures. This repo provides a simple implimentation of SCD using TorchMD-Net as the backbone and access to pretrained models through huggingface.
  
@@ -109,11 +109,11 @@ NOTE: Some datasets require our unleaeased helper library Structure Cloud. Comin
 If you use this work, please cite:
 
 ```bibtex
-@article{perez2025scd,
-  title   = {Self-Conditioned Denoising for Atomistic Representation Learning},
-  author  = {Perez, Tynan and G´omez-Bombarelli, Rafael},
-  year    = {2025},
-  note    = {Preprint, arxiv link coming soon}
+@article{perez2026,
+  author = {Tynan Perez and Rafael Gomez-Bombarelli},
+  title = {Self-Conditioned Denoising for Atomistic Representation Learning},
+  year = {2026}
+  url={https://arxiv.org/abs/2603.17196}
 }
 ```
 
