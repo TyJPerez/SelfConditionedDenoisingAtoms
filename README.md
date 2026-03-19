@@ -132,7 +132,49 @@ You can set these directly in your run config (for example, `configs/pretrain_*.
 ```bash
 --max-nodes-per-batch 4000 --batch-clipper-cache-size 1000 --allow-test-clipping False
 ```
+---
 
+## Graph creation options
+
+| Mode | `noise_in_loader` | `allow_periodic` | Notes |
+|---|---|---|---|
+| TorchMD-Net compiled kernel (fastest) | `False` | `False` | Preferred for non-periodic molecules when extension is compiled. |
+| Loader-side graph creation | `True` | `False` or `True` | Works without compiled extension and is required for periodic workflows. |
+
+Note: `noise_in_loader=True` does not necessarily apply positional noise if noise scale is set to zero.
+
+### Which mode should I use?
+
+| Task | Recommended settings | Why |
+|---|---|---|
+| Molecule pretraining/fine-tuning (non-periodic) with compiled extension | `noise_in_loader=False`, `allow_periodic=False` | Uses fast TorchMD-Net graph construction. |
+| Molecule training without compiled extension | `noise_in_loader=True`, `allow_periodic=False` | Keeps training functional without CUDA extension build. |
+| Periodic/materials training | `noise_in_loader=True`, `allow_periodic=True` | Periodic edges are built in loader path. |
+
+### Self-conditioning batch contract
+
+When `self_cond=True` and loader-side transforms are active:
+
+- The data pipeline may return paired graph views per sample (instead of a single graph).
+- Training uses tuple-aware clipping internally (`TupleBatchClipper`) in this mode.
+- If you add custom datasets/transforms, keep this paired-view contract intact for SCD runs.
+
+---
+
+## Evaluation Semantics
+
+During `fit`, validation and test are not fully separate in this codebase:
+
+- Every epoch, the validation loader runs.
+- Additionally, when `current_epoch % test_interval == 0` (and training has started), a test loader is appended and evaluated in the same validation phase.
+
+This means reported metrics may include periodic test-set evaluation during training rather than test-only-at-end behavior.
+
+### Recommended settings for clean comparisons
+
+- Set `allow_test_clipping: false` for strict evaluation comparability.
+- Keep `test_interval` explicit in configs so readers know how often test metrics are sampled during fit.
+- For final reporting, run a dedicated test pass after training and treat that as the headline number.
 
 ---
 

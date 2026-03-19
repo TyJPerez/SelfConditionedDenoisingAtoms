@@ -17,7 +17,6 @@ from .mol_aug import torsion_transform, center, random_rotate, invert
 import numpy as np
 import math
 
-# from torch_geometric.transforms import Compose
 from data.datasets.transforms import AddStandardKeys, RandomCellRepeats, SCD_noise, CreateGraph, Compose
 
 class DataModule(LightningDataModule):
@@ -62,6 +61,8 @@ class DataModule(LightningDataModule):
 
                     return data
                 
+                # Loader-side graph/noise path: required for periodic graphs and the fallback
+                # path when the TorchMD compiled graph kernel is unavailable.
                 if self.params['noise_in_loader']: #required for periodic systems
                     p_rep = self.params["p_cell_repeat"]
                     rep_iters = self.params["cell_repeat_iters"]
@@ -85,7 +86,7 @@ class DataModule(LightningDataModule):
                                 max_reps_per_axis=2,
                                 )]
                     
-                    #implies pretraining with self-conditioned denoising
+                    # self_cond + simple_noise=False returns paired views used by self-conditioning.
                     if self.params['self_cond']: # SCD loss - return two samples
                         # assert self.params['pretraining'], "SCD 'noise in loader' is only implimented for pretraining phase"
                         if self.params['pretraining']:
@@ -101,9 +102,10 @@ class DataModule(LightningDataModule):
                                 ),
                             )
                             transform = Compose(base_transform)
+                            # Pretraining validation mirrors train corruption to track denoising behavior.
                             val_transform = transform # validation will also noise the data
                         else:
-                            #supervised finetuning phase - 2x pass
+                            # Finetuning keeps train corruption but evaluates on clean graphs.
                             train_transform = base_transform.copy()
                             train_transform.append(
                             SCD_noise(
@@ -116,7 +118,7 @@ class DataModule(LightningDataModule):
                                 ),
                             )
                             transform = Compose(train_transform)
-                            val_transform = Compose(base_transform) # validation will also noise the data
+                            val_transform = Compose(base_transform) # validation uses only structural transforms
 
 
                         
@@ -132,7 +134,7 @@ class DataModule(LightningDataModule):
                                 ),
                             )
                         transform = Compose(base_transform)
-                        #NOTE: random cell repeats should not be applied to validation set
+                        # Validation keeps deterministic graph creation (no corruption, no random repeats).
                         val_transform = [
                             AddStandardKeys(), 
                             SCD_noise( #this only adds graph without noise
@@ -156,6 +158,8 @@ class DataModule(LightningDataModule):
 
                 dataset_factory = lambda t: getattr(datasets, self.params["dataset"])(self.params["dataset_root"], dataset_arg=self.params["dataset_arg"], transform=t)
 
+                # Train split can be noisy/augmented, while val/test should stay comparable.
+                # Instantiate two dataset views so splits share indices but use different transforms.
                 # Noisy version of dataset
                 self.dataset_maybe_noisy = dataset_factory(transform)
                 # Clean version of dataset
@@ -200,6 +204,7 @@ class DataModule(LightningDataModule):
     def val_dataloader(self):
         loaders = [self._get_dataloader(self.val_dataset, "val")]
 
+        # By design, test is run periodically during fit when test_interval is reached.
         if (
             len(self.test_dataset) > 0
             and self.trainer.current_epoch % self.params["test_interval"] == 0
