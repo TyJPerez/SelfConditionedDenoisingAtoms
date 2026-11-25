@@ -5,7 +5,7 @@ from torch_geometric.datasets import MD17
 # aspirin
 # ethanol
 # malonaldehyde
-# "naphtalene" # NOTE: this is an actualy type in the torchgeometirc library, and thus is misspelled here
+# "naphtalene" # NOTE: this is an actual typo in the torch_geometric library, and thus is misspelled here
 # "salicylic acid" # NOTE: there is an actual space in this key
 # toluene
 # uracil

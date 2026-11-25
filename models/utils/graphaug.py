@@ -1,5 +1,5 @@
 
-##### Helper funtions and classes for graph augmentation #####
+##### Helper functions and classes for graph augmentation #####
 
 
 import torch
@@ -23,7 +23,7 @@ def rot3d_matrix(angles : torch.Tensor) -> torch.tensor:
     Returns:
     torch.Tensor: The Nx3x3 rotation matrix.
     """
-    assert angles.shape[-1] == 3, "angles have spacial dimension of 3d "
+    assert angles.shape[-1] == 3, "angles have spatial dimension of 3d "
     if angles.dim() == 1:
         angles = angles.view(1, 3) # add batch dimension
     assert angles.dim() == 2, "angles should be of shape (3,) or (N, 3)"
@@ -347,7 +347,7 @@ def batch_augment(batch,
 
     # if mask_ratio > 0:
     #     #TODO: 
-    #     # Explore independant z and pos masking vs joint masking
+    #     # Explore independent z and pos masking vs joint masking
     #     # this would use 2 masks
 
     #     #create nodewise mask [B, N]
@@ -536,7 +536,7 @@ def distance_graph(pos, cutoff, include_self_loops=False,
     # Add class node connections
     if add_cls_node:
         #Alter distance matrix to set cls node distances
-        if cls_issource: # if nodes recieved message from cls node
+        if cls_issource: # if nodes received message from cls node
             if cls_source_dist is not None:
                 dist_matrix[0, 1:] = cls_source_dist
         else: # if cls node is not a source for messages passing to other nodes

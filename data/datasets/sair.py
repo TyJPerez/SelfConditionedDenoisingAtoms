@@ -12,7 +12,7 @@ def _select_by_residue_indices(data, res_indices):
     #select atoms in the closest residues
     atom_res_idx = data['atom_res_idx']
 
-    #create a mask where valuse in atom_res_idx are in min_indices
+    #create a mask where values in atom_res_idx are in min_indices
     neighbor_atom_mask = torch.where(torch.isin(atom_res_idx, res_indices), True, False)
     nerighbor_res_mask = torch.tensor([i in res_indices for i in range(data['res_pos'].shape[0])])
 
@@ -99,9 +99,6 @@ class SAIRDataset(Dataset):
                  root,
                  source_dir ='processed',
                  ):
-        #TODO: temp fix
-        root = '/global/homes/t/tyjperez/Projects/SelfConditionedDenoising/tmp/sair_data/'
-
         self.source_data = os.path.join(root, source_dir)
 
         assert os.path.exists(self.source_data), f"Source data directory does not exist: {self.source_data}"
@@ -190,11 +187,6 @@ class SampledSAIRDataset(SAIRDataset):
             out = self.transform(out)
 
         return out
-
-# root = '/global/homes/t/tyjperez/Projects/SelfConditionedDenoising/tmp/sair_data/'
-
-# test_ds = SampledSAIRDataset(root)
-# print(f"Dataset length: {len(test_ds)}")
 
 
 class SAIRPocket(SAIRDataset):

@@ -1,0 +1,18 @@
+{
+  "title": "SelfConditionedDenoisingAtoms: code for self-conditioned denoising",
+  "upload_type": "software",
+  "description": "<p>Code for the paper <em>Self-Conditioned Denoising for Atomistic Representation Learning</em>. It contains the model implementations, dataset loaders, training and evaluation scripts, and configuration files. Pre-trained model weights are hosted at https://huggingface.co/Ty-Perez.</p>",
+  "creators": [
+    {"name": "Perez, Tynan J.", "affiliation": "Department of Chemistry, Massachusetts Institute of Technology"},
+    {"name": "Carretero López, Luis", "affiliation": "ETH Zürich"},
+    {"name": "Deng, Bowen", "affiliation": "Department of Materials Science and Engineering, Massachusetts Institute of Technology"},
+    {"name": "Gómez-Bombarelli, Rafael", "affiliation": "Department of Materials Science and Engineering, Massachusetts Institute of Technology"}
+  ],
+  "license": "MIT",
+  "access_right": "open",
+  "keywords": ["self-supervised learning", "denoising", "pre-training", "atomistic machine learning", "graph neural networks"],
+  "related_identifiers": [
+    {"identifier": "arXiv:2603.17196", "relation": "isSupplementTo", "scheme": "arxiv"},
+    {"identifier": "https://github.com/TyJPerez/SelfConditionedDenoisingAtoms", "relation": "isSupplementTo", "scheme": "url"}
+  ]
+}

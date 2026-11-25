@@ -120,7 +120,7 @@ def generate_graph(
         )
     )
 
-    # atom indexs in the edge_index need to be offset
+    # atom indices in the edge_index need to be offset
     atom_index_offset = data.natoms.cumsum(dim=0).roll(1)
     atom_index_offset[0] = 0
     edge_index = torch.hstack(
@@ -199,7 +199,7 @@ class GraphGenerator():
         self.alt_cell_key = alt_cell_key
         
         if neighbor_method == 'grid':
-            # use spacial grid-based neighbor search - faster for large systems
+            # use spatial grid-based neighbor search - faster for large systems
             # use for systems with > ~1000 atoms
             self.radius_pbc_version = 2 
         elif neighbor_method == 'brute':

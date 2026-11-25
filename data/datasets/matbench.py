@@ -76,7 +76,7 @@ class MBDataset_base(Dataset):
         self.fold_idx = fold_idx
         self.data = self.all_folds[fold_idx][split]
 
-        #check if pymagen library is available
+        #check if pymatgen library is available
         self.has_pymatgen = False
         try:
             import pymatgen
@@ -96,14 +96,14 @@ class MBDataset_base(Dataset):
             if key == 'bibtex_refs':
                 # pass
                 continue
-            out_str += f"{key}: {value}\n"
+            out += f"{key}: {value}\n"
         return out
     
     def __repr__(self):
         #return basic info about dataset using metadata
         out_str = f'Name: {self.mb_task}\n'
-        out_str += f"Fold {self.fold_idx}: {self.split}\n"
-        out_str += f"size: {len(self.data)} / {len(self.all_sample_ids)}\n"
+        out += f"Fold {self.fold_idx}: {self.split}\n"
+        out += f"size: {len(self.data)} / {len(self.all_sample_ids)}\n"
         return out_str
 
     def load_sample(self, name):
@@ -148,7 +148,7 @@ class mbench_gap(MatbenchDataset):
                  root = None, # place holder for compatibility
                  dataset_arg=0, # fold index 
                  **kwargs):
-        #FIXME: tempory hack until uploaded to hf
+        #FIXME: temporary hack until uploaded to hf
         # manually input path to dataset directory
         kwargs['task_name'] = 'matbench_mp_gap'
         kwargs['fold_idx'] = dataset_arg

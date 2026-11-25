@@ -11,6 +11,7 @@ lightning-utilities
 
 # PyTorch Geometric and Extensions
 torch-geometric>=2.4.0
+# torch-scatter, torch-sparse and torch-cluster are also required (see step 2 above)
 numpy>=1.20.0
 scipy>=1.7.0
 scikit-learn>=1.0.0
@@ -23,8 +24,12 @@ rdkit>=2020.0.0
 
 datasets>=2.0.0
 matplotlib>=3.4.0
+sympy
 tqdm>=4.62.0
 pyyaml>=5.4.0
 wandb>=0.12.0
 huggingface-hub>=0.10.0
 
+# Optional
+# biopython      # only for data/datasets/download_sair.py
+# fairchem-core  # only for computing atom references (data/datasets/omol25.py, qm9.py)

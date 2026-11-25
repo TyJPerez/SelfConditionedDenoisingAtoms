@@ -39,15 +39,13 @@ from huggingface_hub import hf_hub_download
 
 def download_model_checkpoint(model_name, save_dir='./experiments', repo_id_prefix="Ty-Perez/"):
 
-    available_models = ["ct-scd-pcq", "ct-scd-amp"]  # List of available model names in the Huggingface repo
+    available_models = ["ct-scd-pcq", "ct-scd-geom10", "ct-scd-amp20", "ct-scd-omol25"]  # List of available model names in the Huggingface repo
 
     #check if model_name is in available_models
     if model_name not in available_models:
         raise ValueError(f"Model {model_name} not available. Available models: {available_models}")
 
     print(f"Loading model from Huggingface repo: {model_name}")
-    # cache_dir = "/home/tjp/Projects/SelfConditionedDenoising/experiments/hf_models"
-    # model_name = args.load_hf
     
     assert os.path.exists(save_dir), f"Save dir {save_dir} does not exist. Please create it first or change the save dir variable in this script."
     
@@ -66,12 +64,12 @@ def get_args():
     parser.add_argument('--load-model', help='load model from a given epoch, default to last epoch')
     parser.add_argument('--load-hf', default=None, help='load model from huggingface, provide the repo name')
     parser.add_argument('--load-epoch','-ep', default=-1, help='load model from a given epoch')
-    parser.add_argument('--restart', '-r', type=bool, default=False, help='Restart training the load-epoch, default is last')
+    parser.add_argument('--restart', '-r', type=str2bool, default=False, help='Restart training the load-epoch, default is last')
     parser.add_argument('--log-dir', '-l', default='/exp/_new', help='where training outputs go')
     parser.add_argument('--model_config', '-m', default='configs/model_configs/torchnet_basic.yaml', help='config file for model set up')
     parser.add_argument('--conf', '-c', type=open, action=LoadFromFile, help='Configuration yaml file')  # keep second
     parser.add_argument('--batch-size', default=32, type=int, help='batch size')
-    parser.add_argument('--inference-batch-size', default=None, type=int, help='Batchsize for validation and tests.')
+    parser.add_argument('--inference-batch-size', default=None, type=int, help='Batch size for validation and tests.')
     parser.add_argument('--num-epochs', default=300, type=int, help='number of epochs')
     parser.add_argument('--num-steps', default=None, type=int, help='Maximum number of gradient steps.')
     parser.add_argument('--lr', default=1e-4, type=float, help='learning rate')
@@ -97,13 +95,13 @@ def get_args():
     parser.add_argument('--splits', default=None, help='Npz with splits idx_train, idx_val, idx_test')
     parser.add_argument('--train-size', type=number, default=None, help='Percentage/number of samples in training set (None to use all remaining samples)')
     parser.add_argument('--val-size', type=number, default=0.05, help='Percentage/number of samples in validation set (None to use all remaining samples)')
-    parser.add_argument('--standardize', type=bool, default=False, help='If true, multiply prediction by dataset std and add mean')
+    parser.add_argument('--standardize', type=str2bool, default=False, help='If true, multiply prediction by dataset std and add mean')
     parser.add_argument('--test-size', type=number, default=0.1, help='Percentage/number of samples in test set (None to use all remaining samples)')
     parser.add_argument('--test-interval', type=int, default=10, help='Test interval, one test per n epochs (default: 10)')
     
     parser.add_argument('--save-interval', type=int, default=10, help='Save interval, one save per n epochs (default: 10)')
     parser.add_argument('--seed', type=int, default=1, help='random seed (default: 1)')
-    parser.add_argument('--redirect', type=bool, default=False, help='Redirect stdout and stderr to log_dir/log')
+    parser.add_argument('--redirect', type=str2bool, default=False, help='Redirect stdout and stderr to log_dir/log')
     parser.add_argument('--wandb-notes', default="", type=str, help='Notes passed to wandb experiment.')
     parser.add_argument('--job-id', default="auto", type=str, help='Job ID. If auto, pick the next available numeric job id.')
     
@@ -118,7 +116,7 @@ def get_args():
     parser.add_argument('--denoising-weight', default=0., type=float, help='Weighting factor for denoising in the loss function.')
 
     # Data augmentation arguments
-    parser.add_argument('--random-rotate', type=bool, default=False, help='If true, apply random rotation augmentation to positions')
+    parser.add_argument('--random-rotate', type=str2bool, default=False, help='If true, apply random rotation augmentation to positions')
     parser.add_argument('--p-invert', type=float, default=0.0, help='Probability of inverting the coordinates')
     parser.add_argument('--torsion-angle-std', type=float, default=0.0, help='Standard deviation of torsion angles in degrees')
     parser.add_argument('--max-bonds-rotated', type=int, default=0, help='Maximum number of bonds to rotate in torsion augmentation')
@@ -127,73 +125,73 @@ def get_args():
     parser.add_argument('--prior-model', type=str, default=None, help='Which prior model to use. It can be a string, a dict if you want to add arguments for it or a dicts to add more than one prior. e.g. {"Atomref": {"max_z":100}, "Coulomb":{"max_num_neighs"=100, "lower_switch_distance"=4, "upper_switch_distance"=8}', action="extend", nargs="*")
 
     # Training mode arguments
-    parser.add_argument('--pretraining', type=bool, default=False, help='If true, the model is pretrained')
-    parser.add_argument('--self_cond', type=bool, default=False, help='use self conditining ssl step')
+    parser.add_argument('--pretraining', type=str2bool, default=False, help='If true, the model is pretrained')
+    parser.add_argument('--self_cond', type=str2bool, default=False, help='use self conditioning ssl step')
 
     # Job scheduling arguments
     parser.add_argument("--max_time_minutes", type=int, default=None, help = 'Maximum wall time in minutes')
     parser.add_argument("--max_epochs_per_run", '-mep', type=int, default=None, help = 'Maximum number of epochs per run')
 
     # Fine-tuning: model architecture modifications
-    parser.add_argument('--reset-head', type=bool, default=False, help='If true, reset the scalar head of the model when loading from a pretrained model.')
-    parser.add_argument('--reset-embeddings', type=bool, default=False, help='If true, reset the embeddings of the model when loading from a pretrained model.')
+    parser.add_argument('--reset-head', type=str2bool, default=False, help='If true, reset the scalar head of the model when loading from a pretrained model.')
+    parser.add_argument('--reset-embeddings', type=str2bool, default=False, help='If true, reset the embeddings of the model when loading from a pretrained model.')
     parser.add_argument('--reset-norms', type=str, default=None, help='If true, reset layer norms of the model. string, either LN, CN, or None')
 
     # Regularization arguments
-    parser.add_argument('--droppath_warmup', type=bool, default=False, help='If true, linearly decrease droppath rate during early training phase.')
+    parser.add_argument('--droppath_warmup', type=str2bool, default=False, help='If true, linearly decrease droppath rate during early training phase.')
     parser.add_argument('--init-droppath', type=float, default=0.15, help='Initial droppath rate if droppath_warmup is true.')
     parser.add_argument('--final-droppath', type=float, default=0.0, help='Final droppath rate if droppath_warmup is true.')
 
     # Model momentum/EMA arguments
-    parser.add_argument('--momentum-update', type=bool, default=False, help='If true, maintain a model copy updated by momentum.')
+    parser.add_argument('--momentum-update', type=str2bool, default=False, help='If true, maintain a model copy updated by momentum.')
     parser.add_argument('--model-momentum', type=float, default=0.996, help='Decay rate for model momentum updates.')
-    parser.add_argument('--use-ema-model', type=bool, default=False, help='If true, when loading a pretrained checkpoint use the EMA model as the primary model if it exists.')
-    parser.add_argument('--val-ema-model', type=bool, default=False, help='If true, use the EMA model for validation if it exists.')
+    parser.add_argument('--use-ema-model', type=str2bool, default=False, help='If true, when loading a pretrained checkpoint use the EMA model as the primary model if it exists.')
+    parser.add_argument('--val-ema-model', type=str2bool, default=False, help='If true, use the EMA model for validation if it exists.')
 
     # Training configuration
-    parser.add_argument('--derivative', type=str2bool, default=None, help='If true, model returns energy and forces (dy)') ### TODO: NEW
+    parser.add_argument('--derivative', type=str2bool, default=None, help='If true, model returns energy and forces (dy)')
     parser.add_argument('--gradient-clipping', type=float, default=1.0, help='Gradient clipping norm')
     parser.add_argument('--val-interval', type=int, default=1, help='Test interval, one test per n epochs (default: 10)')
-    parser.add_argument('--add-head-to-pred', type=bool, default=False, help='If true, add embedding head prediction to final y prediction.')
-    parser.add_argument('--weight-decay-on-head', type=bool, default=False, help='If true, apply weight decay to the scalar head of the model.')
+    parser.add_argument('--add-head-to-pred', type=str2bool, default=False, help='If true, add embedding head prediction to final y prediction.')
+    parser.add_argument('--weight-decay-on-head', type=str2bool, default=False, help='If true, apply weight decay to the scalar head of the model.')
 
     # Optimizer arguments
     parser.add_argument('--beta1', type=float, default=0.9, help='Beta1 for AdamW optimizer')
     parser.add_argument('--beta2', type=float, default=0.999, help='Beta2 for AdamW optimizer')
     
     # Contrastive loss arguments
-    parser.add_argument('--create-contrastive-loss', type=bool, default=False, help='If true, create a contrastive loss module.')
+    parser.add_argument('--create-contrastive-loss', type=str2bool, default=False, help='If true, create a contrastive loss module.')
     parser.add_argument('--contrastive-loss-weight', type=float, default=0.0, help='Weight of the contrastive loss.')
     parser.add_argument('--ctr-init-tau', type=float, default=0.1, help='Initial temperature for contrastive loss.')
 
     # Periodic materials dataset arguments
-    parser.add_argument('--noise_in_loader', type=bool, default=False, help='If true, add noise to positions in the data loader instead of in the model.')
+    parser.add_argument('--noise_in_loader', type=str2bool, default=False, help='If true, add noise to positions in the data loader instead of in the model.')
     parser.add_argument('--graph_cutoff', type=float, default=5.0, help='if graph creation in loader, Cutoff distance for neighbor list in periodic datasets.')
     parser.add_argument('--p_cell_repeat', type=float, default=0.15, help='if periodic system, number of times to repeat the unit cell in each direction.')
     parser.add_argument('--cell_repeat_iters', type=int, default=1, help='Number of iterations to probabilistically repeat cell based on p_cell_repeat.')
-    parser.add_argument('--allow_periodic', type=bool, default=False, help='If true, allow periodic boundary conditions in graph construction.')
+    parser.add_argument('--allow_periodic', type=str2bool, default=False, help='If true, allow periodic boundary conditions in graph construction.')
     parser.add_argument('--neighbor_method', type=str, default='brute', help='Method for neighbor search in periodic datasets (default: brute). options: brute, grid')
     parser.add_argument('--max_neighbors', type=int, default=32, help='Maximum number of neighbors in loader graph generation.')
 
     # Batch clipping arguments
     parser.add_argument('--max-nodes-per-batch', type=int, default=None, help='Maximum number of nodes per batch. If set, batches will be clipped to this size.')
     parser.add_argument('--batch-clipper-cache-size', type=int, default=1000, help='Maximum number of samples to cache in the batch clipper.')
-    parser.add_argument('--allow-test-clipping', type=bool, default=True, help='If true, allow batch clipping during validation and test.')
+    parser.add_argument('--allow-test-clipping', type=str2bool, default=True, help='If true, allow batch clipping during validation and test.')
 
     # Matbench dataset arguments
-    parser.add_argument('--predefined_splits', type=bool, default=False, help='If true, use predefined splits for matbench datasets.')
+    parser.add_argument('--predefined_splits', type=str2bool, default=False, help='If true, use predefined splits for matbench datasets.')
     parser.add_argument('--rep-min-atoms', type=int, default=4, help='Minimum number of atoms to trigger cell repetition.')
     parser.add_argument('--set-head-agg', type=str, default=None, help='Aggregation method for the head of the model (default: sum). options: sum, mean, max')
 
     # Plotting and debugging arguments
     parser.add_argument('--no-wandb-resume', action='store_true', default=False, help='If true, allow wandb to resume previous runs in the same log dir. If false, always start a new run in wandb.')
-    parser.add_argument('--parity-plot', type=bool, default=False, help='If true, create parity plots after training.')
+    parser.add_argument('--parity-plot', type=str2bool, default=False, help='If true, create parity plots after training.')
     parser.add_argument('--plot-interval', type=int, default=-1, help='Interval (in epochs) to create parity plots during training.')
-    parser.add_argument('--compute-corr', type=bool, default=False, help='If true, compute and log correlation metrics after each epoch.')
+    parser.add_argument('--compute-corr', type=str2bool, default=False, help='If true, compute and log correlation metrics after each epoch.')
 
     ### for LBA dataset ligand masking
-    parser.add_argument('--allow-node-mask', type=bool, default=False, help='If true, mask ligand atoms in the LBA dataset during training.')
-    parser.add_argument('--inverse-node-mask', type=bool, default=False, help='If true, mask ligand atoms in the LBA dataset during training.')
+    parser.add_argument('--allow-node-mask', type=str2bool, default=False, help='If true, mask ligand atoms in the LBA dataset during training.')
+    parser.add_argument('--inverse-node-mask', type=str2bool, default=False, help='If true, mask ligand atoms in the LBA dataset during training.')
 
     ### for omol only
     parser.add_argument('--direct-force-pred', type=str2bool, default=False, help='If true, model directly predicts forces instead of via energy derivative.')

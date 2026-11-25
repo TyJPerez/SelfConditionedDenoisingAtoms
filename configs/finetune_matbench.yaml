@@ -3,7 +3,7 @@
 log_dir: experiments/
 load_model: null
 load_hf: null
-# load_hf : ct-scd-amp20 # load our pretrained model from hugging-face
+# load_hf: ct-scd-amp20 # load our pretrained model from hugging-face
 wandb_notes: ""
 job_id: auto
 
@@ -69,7 +69,7 @@ momentum_update: False
 model_momentum: 0.996
 val_ema_model: False
 
-# data agumentations
+# data augmentations
 random_rotate: False
 torsion_angle_std: 0
 max_bonds_rotated : 0

@@ -59,7 +59,7 @@ momentum_update: False
 model_momentum: 0.996
 val_ema_model: False
 
-# data agumentations
+# data augmentations
 random_rotate: False
 torsion_angle_std: 0.0
 max_bonds_rotated : 0

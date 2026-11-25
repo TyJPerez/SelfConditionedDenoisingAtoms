@@ -688,7 +688,7 @@ class OMol25Dataset(Dataset):
 
 from torch_geometric.data import DataLoader
 
-#### A dataset wrapper class to incoporate Omol25 into training pipeline ####
+#### A dataset wrapper class to incorporate Omol25 into training pipeline ####
 class omol25_S2EF(OMol25Dataset):
     def __init__(self, 
                  root: str,

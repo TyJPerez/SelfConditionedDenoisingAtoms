@@ -31,7 +31,7 @@ class DataModule(LightningDataModule):
         if self.dataset is None:
                
                 def molecule_transform(data):
-                    # not aplicable for materials and periodic systems
+                    # not applicable for materials and periodic systems
                     invert_prob = self.params["p_invert"]
                     angle_std = self.params["torsion_angle_std"]
                     max_torsions = self.params["max_bonds_rotated"]
@@ -88,7 +88,7 @@ class DataModule(LightningDataModule):
                     
                     # self_cond + simple_noise=False returns paired views used by self-conditioning.
                     if self.params['self_cond']: # SCD loss - return two samples
-                        # assert self.params['pretraining'], "SCD 'noise in loader' is only implimented for pretraining phase"
+                        # assert self.params['pretraining'], "SCD 'noise in loader' is only implemented for pretraining phase"
                         if self.params['pretraining']:
                             # reg_noise_scale = 0.005
                             base_transform.append(

@@ -198,7 +198,7 @@ def radius_graph_pbc(
     atom_count_sqr = torch.arange(num_atom_pairs, device=device) - index_sqr_offset
 
     # Compute the indices for the pairs of atoms (using division and mod)
-    # If the systems get too large this apporach could run into numerical precision issues
+    # If the systems get too large this approach could run into numerical precision issues
     index1 = (
         torch.div(atom_count_sqr, num_atoms_per_image_expand, rounding_mode="floor")
     ) + index_offset_expand
@@ -324,7 +324,7 @@ def canonical_pbc(data, pbc: torch.Tensor | None):
                     "Different structures in the batch have different PBC configurations. This is not currently supported."
                 )
     # elif pbc is not None and hasattr(data, "pbc"):
-    #     # This can be on a different device, deffering to a new PR to fix this TODO
+    #     # This can be on a different device, deferring to a new PR to fix this TODO
     #     if (pbc != data.pbc).all():
     #         logging.warning("PBC provided to radius_graph_pbc differs from data.pbc")
     elif pbc is None:

@@ -7,7 +7,7 @@ import torch
 from torch import nn, Tensor
 from lightning_utilities.core.rank_zero import rank_zero_warn
 
-__all__ = ["Atomref", "LearnableAtomref", "PositiveOutput"]
+__all__ = ["Atomref", "LearnableAtomref"]
 
 class BasePrior(nn.Module):
     r"""Base class for prior models.

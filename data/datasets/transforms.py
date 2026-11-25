@@ -52,7 +52,7 @@ class AddStandardKeys(BaseTransform):
     def forward(self, data, depth=0):
 
         if isinstance(data, tuple) and depth==0:
-            #recursivly apply to each data object in the tuple
+            #recursively apply to each data object in the tuple
             out = tuple([self.forward(d, depth=depth+1) for d in data])
             return out
 
@@ -141,7 +141,7 @@ class RandomCellRepeats(BaseTransform):
     def forward(self, data, depth=0):
 
         if isinstance(data, tuple) and depth==0:
-            #recursivly apply to each data object in the tuple
+            #recursively apply to each data object in the tuple
             out = tuple([self.forward(d, depth=depth+1) for d in data])
             return out
          
@@ -315,7 +315,7 @@ class CreateGraph(BaseTransform):
         self.alt_cell_key = alt_cell_key
         
         if neighbor_method == 'grid':
-            # use spacial grid-based neighbor search - faster for large systems
+            # use spatial grid-based neighbor search - faster for large systems
             # use for systems with > ~1000 atoms
             self.radius_pbc_version = 2 
         elif neighbor_method == 'brute':
@@ -424,7 +424,7 @@ class SCD_noise(BaseTransform):
             # used for either COORD or regularizing noise on periodic systems
             
             if isinstance(data, tuple) and depth==0:
-                #recursivly apply to each data object in the tuple
+                #recursively apply to each data object in the tuple
                 out = tuple([self.forward(d, depth=depth+1) for d in data])
                 return out
 

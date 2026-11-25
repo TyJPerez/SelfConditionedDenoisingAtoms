@@ -233,7 +233,7 @@ def mp_download_and_extract_tar(tar_files, output_directory):
     #return time taken for possible averaging later
     return elapsed
 
-def multiprocess_downlaod(output_dir, max_files=None, max_workers=None):
+def multiprocess_download(output_dir, max_files=None, max_workers=None):
     # Get system info
     available_cpus = multiprocessing.cpu_count()
     remaining_tars = get_remaining_tars(output_directory=output_dir)
@@ -471,8 +471,8 @@ def preprocess_sample(id, input_dir, output_dir, max_confs=5):
 def mp_preprocess_samples(source_dir, output_dir, dump_dir_name='processed', max_confs=5, max_workers=None, max_samples=None):
     ''' multiprocessing preprocessing of all samples in source directory and save to output directory
     
-    NOTE: this will take any downloaded/extracted sair cif files and preproces them into 
-    dictionary files containing tensor numerical data. Afterwords the original cif files are deleted.
+    NOTE: this will take any downloaded/extracted sair cif files and preprocess them into 
+    dictionary files containing tensor numerical data. Afterwards the original cif files are deleted.
     this is done to reduce the total file count and speed up future loading.
     
     args:
@@ -535,7 +535,7 @@ if __name__ == '__main__':
     print("--- to download and preprocess the full dataset, you must uncomment the relevant sections below and run this script as a job on your cluster. ---\n")
 
     # Define a destination for the data
-    output_directory = "/pscratch/sd/t/tyjperez/scd_dump/tmp/sair_data"
+    output_directory = "tmp/sair_data"  # set this to a location with enough storage
 
     # Call the function to download and load the parquet data
     sair_df = load_sair_parquet(destination_dir=output_directory)
@@ -565,7 +565,7 @@ if __name__ == '__main__':
 
     ### multiprocessing download + extraction ###
     # print("--- Running Multiprocessing Download + Extraction ---")
-    # multiprocess_downlaod(output_dir=output_directory, max_files=25)
+    # multiprocess_download(output_dir=output_directory, max_files=25)
 
     ### after download, preprocess samples ###
     # print("\n--- Running Multiprocessing Preprocessing ---")

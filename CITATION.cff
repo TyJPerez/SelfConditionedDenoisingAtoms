@@ -1,0 +1,39 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the paper below."
+title: "SelfConditionedDenoisingAtoms: code for self-conditioned denoising"
+type: software
+authors:
+  - family-names: Perez
+    given-names: Tynan J.
+    affiliation: "Department of Chemistry, Massachusetts Institute of Technology"
+  - family-names: Carretero López
+    given-names: Luis
+    affiliation: "ETH Zürich"
+  - family-names: Deng
+    given-names: Bowen
+    affiliation: "Department of Materials Science and Engineering, Massachusetts Institute of Technology"
+  - family-names: Gómez-Bombarelli
+    given-names: Rafael
+    affiliation: "Department of Materials Science and Engineering, Massachusetts Institute of Technology"
+repository-code: "https://github.com/TyJPerez/SelfConditionedDenoisingAtoms"
+license: MIT
+keywords:
+  - self-supervised learning
+  - denoising
+  - pre-training
+  - atomistic machine learning
+  - graph neural networks
+preferred-citation:
+  type: article
+  title: "Self-Conditioned Denoising for Atomistic Representation Learning"
+  authors:
+    - family-names: Perez
+      given-names: Tynan J.
+    - family-names: Carretero López
+      given-names: Luis
+    - family-names: Deng
+      given-names: Bowen
+    - family-names: Gómez-Bombarelli
+      given-names: Rafael
+  year: 2026
+  url: "https://arxiv.org/abs/2603.17196"

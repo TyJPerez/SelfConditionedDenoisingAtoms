@@ -8,11 +8,11 @@ import os
 
 '''
 NOTE: the correct QM9 dataset should have exactly 130831 molecules. 
-if your version of torch_geometric has more than this, or throws and error you may have to 
+if your version of torch_geometric has more than this, or throws an error you may have to 
 edit this loader to correct for this.
 
-this repo was originall written using torch geometric 2.6.1
-other version may or may not work as expected.
+this repo was originally written using torch geometric 2.6.1
+other versions may or may not work as expected.
 
 '''
 
@@ -91,7 +91,7 @@ class QM9(QM9_geometric):
             #FIXME: remove this section after testing
             ''' 
             NOTE: we recompute atomrefs using fairchem tools in the 
-            function below becasue its unclear how torchgeometric has computed the default values provided.
+            function below because it is unclear how torchgeometric has computed the default values provided.
             '''
             atomref = self.atomref(self.label_idx)
             if atomref is None:

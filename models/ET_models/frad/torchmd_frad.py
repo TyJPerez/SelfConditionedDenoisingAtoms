@@ -195,7 +195,7 @@ class EMB(torch.nn.Module):
 
 
 
-# fuse 2D infomation inside
+# fuse 2D information inside
 class FradOriginal(nn.Module): # TorchMD_ETF2D
     r"""The TorchMD equivariant Transformer architecture.
 

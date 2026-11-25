@@ -60,7 +60,7 @@ momentum_update: False
 model_momentum: 0.996
 val_ema_model: False
 
-# data agumentations
+# data augmentations
 random_rotate: True
 torsion_angle_std: 0
 max_bonds_rotated : 0
@@ -69,7 +69,7 @@ p_invert : 0.0
 noise_scale: 0.005
 denoising_weight: 0.1
 
-noise_in_loader: False # Turn this to True if you want to run these models without compiling the torchnet graph kernal
+noise_in_loader: False # Turn this to True if you want to run these models without compiling the torchnet graph kernel
 allow_periodic: False # Turn this to True if you want to allow for periodic inputs
 
 #fine tuning specific flags

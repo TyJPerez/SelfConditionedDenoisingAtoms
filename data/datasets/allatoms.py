@@ -17,7 +17,7 @@ class AddTag():
         self.tag = tag
     def __call__(self, data, depth=0):
         if isinstance(data, tuple) and depth==0:
-            #recursivly apply to each data object in the tuple
+            #recursively apply to each data object in the tuple
             out = tuple([self.__call__(d, depth=depth+1) for d in data])
             return out
 

@@ -30,10 +30,10 @@ class LBADataset_base(Dataset):
         data/                # directory containing all .pt files
             pdb-id-0_protein.pt     # {pdb-id-0} = actual pdb id name
             pdb-id-0_pocket.pt
-            pdb-id-0_ligrand.pt
+            pdb-id-0_ligand.pt
             pdb-id-1_protein.pt     # three files per sample
             pdb-id-1_pocket.pt
-            pdb-id-1_ligrand.pt
+            pdb-id-1_ligand.pt
             ...
         summary.json         # summary file containing metadata and train/val/test splits
             rows: 
@@ -50,7 +50,7 @@ class LBADataset_base(Dataset):
         split (str): data split to load. must be in avail_splits
         dataset_dir (str): default = None. path to dataset directory. if None, will attempt to download from huggingface    
         outputs (list of str): default = ['protein', 'pocket', 'ligand']. 
-            orderd list of outputs to load. can be any combination of ['protein', 'pocket', 'ligand'] in any order.
+            ordered list of outputs to load. can be any combination of ['protein', 'pocket', 'ligand'] in any order.
             'protein' files are large, so only load if needed.
             'ligand' and 'pocket' files contain binding label data
     '''

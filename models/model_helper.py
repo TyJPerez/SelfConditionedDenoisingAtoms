@@ -112,7 +112,7 @@ def create_model(args, prior_model=None, mean=None, std=None):
 
     #check if args contains prior model information
     if args.get('prior_model', None) is not None:
-        #TODO make this more robust but switching the check to weaither prior_model is a prior class object
+        #TODO make this more robust but switching the check to whether prior_model is a prior class object
         if isinstance(args['prior_model'], str) or isinstance(args['prior_model'], dict):
             model_config['prior_model'] = create_prior_models(args)
         else:
@@ -320,6 +320,6 @@ def load_model(filepath, args=None, device="cpu", mean=None, std=None, **kwargs)
         if has_ema_model:
             ema_model.std = std
 
-    print('--- MODEL SUCESSFULLY LOADED ---')
+    print('--- MODEL SUCCESSFULLY LOADED ---')
 
     return model.to(device), ema_model, ckpt

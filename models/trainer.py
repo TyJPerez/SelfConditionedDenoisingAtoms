@@ -623,7 +623,7 @@ class LTrainer(LightningModule):
             
             if stage == "train":
                 if self.self_cond: 
-                    #### do Self conditioned denoising  to seporate noise prediction ####
+                    #### do Self conditioned denoising  to separate noise prediction ####
                     assert self.noise_scale > 0.0, 'Self conditioned denoising requires noise augmentation!'
                     assert self.hparams.denoising_weight > 0.0, 'Self conditioned denoising requires denoising weight to be non-zero!'
                     
@@ -741,7 +741,7 @@ class LTrainer(LightningModule):
             if "y" not in batch:
                 # "use" both outputs of the model's forward function but discard the first
                 # to only use the derivative and avoid 'Expected to have finished reduction
-                # in the prior iteration before starting a new one.', which otherwise get's
+                # in the prior iteration before starting a new one.', which otherwise gets
                 # thrown because of setting 'find_unused_parameters=False' in the DDPPlugin
                 deriv = deriv + pred.sum() * 0
     
@@ -825,7 +825,7 @@ class LTrainer(LightningModule):
                 # "use" both outputs of the model's forward (see comment above).
                 noise_pred = noise_pred + pred.sum() * 0
             
-            #NOTE: updateing position normalizer may be off in some variants
+            #NOTE: updating position normalizer may be off in some variants
             # normalized_pos_target = self.model.pos_normalizer(batch.pos_target)
             normalized_noise = self.model.noise_normalizer(batch.noise, update=self.update_normalizer)
             loss_pos = loss_fn(noise_pred, normalized_noise)

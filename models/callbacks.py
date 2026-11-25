@@ -96,7 +96,7 @@ class ParityPlot(Callback):
         device = pl_module.device
         print(f"Generating parity plot for {stage} set on device {device}")
 
-        #FIXE THE DROPPATH PROBLEM
+        #FIX THE DROPPATH PROBLEM
         # dp_stat = pl_module.model.rep_model.attention_layers[0].joint_droppath.drop_prob
         # print(f"----- Current droppath rate: {dp_stat} -----")
         
@@ -358,7 +358,7 @@ class LimitRun(Callback):
         if not model_checkpoint_call_found:
             print('WARNING: no model checkpoint callback found!! check point was not saved. no manual save process set up')
         
-        print(f"--- STOPING TRAINING: due to {reason}. Saved checkpoint: {tmp_path}")
+        print(f"--- STOPPING TRAINING: due to {reason}. Saved checkpoint: {tmp_path}")
         
         trainer.should_stop = True  # graceful stop at the next safe point
     
@@ -434,6 +434,6 @@ def _save_checkpoint(out_path, trainer, reason="time limit"):
         if not model_checkpoint_call_found:
             print('WARNING: no model checkpoint callback found!! check point was not saved. no manual save process set up')
         
-        print(f"--- STOPING TRAINING: due to {reason}. Saved checkpoint: {tmp_path}")
+        print(f"--- STOPPING TRAINING: due to {reason}. Saved checkpoint in: {out_path}")
         
         trainer.should_stop = True  # graceful stop at the next safe point

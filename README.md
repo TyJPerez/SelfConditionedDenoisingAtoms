@@ -1,16 +1,18 @@
 # Self-Conditioned Denoising for Atomistic Representation Learning
 
 This is the official implementation for the paper:
-[**Self-Conditioned Denoising for Atomistic Representation Learning**](https://arxiv.org/pdf/2603.17196)
+[**Self-Conditioned Denoising for Atomistic Representation Learning**](https://arxiv.org/abs/2603.17196)
 
 Self-conditioned denoising (SCD) is a self-supervised pretraining method for atomistic data that is domain agnostic (small molecules, periodic materials, and/or proteins/biomolecules) and benefits from pretraining with both ground state and higher energy structures. This repository provides a simple implementation of SCD using TorchMD-Net as the backbone and access to pretrained models through Hugging Face.
  
-Pretrained checkpoints are available on HuggingFace for two domains:
+Pretrained checkpoints are available on Hugging Face:
 
-| Model | HuggingFace Repo | Pretraining Dataset | Domain |
+| Model | Hugging Face Repo | Pretraining Dataset | Domain |
 |---|---|---|---|
 | `ct-scd-pcq` | [Ty-Perez/ct-scd-pcq](https://huggingface.co/Ty-Perez/ct-scd-pcq) | PCQM4MV2 | Molecules |
-| `ct-scd-amp` | [Ty-Perez/ct-scd-amp](https://huggingface.co/Ty-Perez/ct-scd-amp) | Alex-MP-20 | Materials |
+| `ct-scd-geom10` | [Ty-Perez/ct-scd-geom10](https://huggingface.co/Ty-Perez/ct-scd-geom10) | GEOM10 | Molecules (conformers) |
+| `ct-scd-amp20` | [Ty-Perez/ct-scd-amp20](https://huggingface.co/Ty-Perez/ct-scd-amp20) | Alex-MP-20 | Materials |
+| `ct-scd-omol25` | [Ty-Perez/ct-scd-omol25](https://huggingface.co/Ty-Perez/ct-scd-omol25) | OMol25 | Molecules |
 
 
 ---
@@ -32,14 +34,14 @@ cd models/ET_models && python setup.py build_ext --inplace
 
 A general graph creation method that also supports periodic materials is available without compilation. See `examples.ipynb` for details on using either method.
 
-If you do not want to use the compiled TorchMD-Net Kernel, set noise_in_loader=True in the config file for you select run.
+If you do not want to use the compiled TorchMD-Net kernel, set `noise_in_loader: True` in the config file for your selected run.
 
 ---
 
 ## Loading and Using a Pretrained Model
 
 See `examples.ipynb` for instructions on:
-- Loading a pretrained model from HuggingFace
+- Loading a pretrained model from Hugging Face
 - Instantiating an untrained model from a config
 - Running a forward pass with and without the TorchMD-Net kernel
 
@@ -52,7 +54,7 @@ The model forward pass returns a dictionary with the following keys:
 | `"y"` | Scalar property prediction |
 | `"noise_pred"` | Predicted per atom coordinate noise |
 | `"mol_emb"` | Output from graph level embedding projection head |
-| `"atom_embs"` | (Optional) Output from atom level embeddings (requires return_atom_embs=True)|
+| `"atom_embs"` | (Optional) Output from atom level embeddings (requires `return_atom_embs=True`) |
 
 ---
 
@@ -61,7 +63,7 @@ The model forward pass returns a dictionary with the following keys:
 Pretrain a model using SCD on the PCQM4MV2 dataset:
 ```bash
 python train.py --conf configs/pretrain_pcq.yaml # use faster graph creation
-python train.py --conf configs/pretrain_pcq.yaml --noise_in_loader True # if torchnetmd kernel is not compiled
+python train.py --conf configs/pretrain_pcq.yaml --noise_in_loader True # if the TorchMD-Net kernel is not compiled
 ```
 
 Pretrain a model using SCD on the Alex-MP-20 dataset:
@@ -75,7 +77,7 @@ python train.py --conf configs/pretrain_amp20.yaml
 
 ## Finetuning
 
-Load a pretrained checkpoint from HuggingFace:
+Load a pretrained checkpoint from Hugging Face:
 ```bash
 python train.py --conf configs/finetune_qm9.yaml --load-hf ct-scd-pcq --job-id scd-pcq_qm9-homo
 ```
@@ -84,7 +86,7 @@ Load a pretrained checkpoint from a local path:
 ```bash
 python train.py --conf configs/finetune_qm9.yaml --load-model 'experiments/{NAME}/{checkpoint}.ckpt' --job-id pretrained_qm9-homo
 ```
-Note, if you did not compile the torchnet graph kernel us must set `--noise_in_loader True`
+Note: if you did not compile the TorchMD-Net graph kernel, you must set `--noise_in_loader True`.
 
 > The default finetuning target for QM9 is `homo`. This can be changed in `configs/finetune_qm9.yaml`.
 
@@ -97,14 +99,14 @@ Note, if you did not compile the torchnet graph kernel us must set `--noise_in_l
 | Dataset | Domain | Available Config |
 |---|---|---|
 | PCQM4MV2 | Molecules | `pretrain_pcq.yaml` |
-| GEOM | Drug-like conformers | *Requires Structure Cloud* |
+| GEOM | Drug-like conformers | `data/datasets/geom.py` (*requires StructureCloud*) |
 | Alex-MP-20 | Inorganic materials | `pretrain_amp20.yaml` |
-| OMol25 | Organic Molecules | use 'OMOL25' in `pretrain_pcq.yaml` |
+| OMol25 | Organic molecules | use `OMOL25` in `pretrain_pcq.yaml` |
 | QM9 | Small molecules | `finetune_qm9.yaml` |
-| Matbench | Inorganic Materials | `finetune_matbench.yaml` |
-| LBA | Proteins | `data/datasets/lba.py` |
+| Matbench | Inorganic materials | `finetune_matbench.yaml` (*requires StructureCloud*) |
+| LBA | Proteins | `data/datasets/lba.py` (*requires StructureCloud*) |
 
-NOTE: Some datasets require our unleashed helper library Structure Cloud. Coming soon! 
+NOTE: Some datasets require our unreleased helper library StructureCloud. Coming soon!
 
 ---
 
@@ -132,6 +134,7 @@ You can set these directly in your run config (for example, `configs/pretrain_*.
 ```bash
 --max-nodes-per-batch 4000 --batch-clipper-cache-size 1000 --allow-test-clipping False
 ```
+
 ---
 
 ## Graph creation options
@@ -159,10 +162,10 @@ If you use this work, please cite:
 
 ```bibtex
 @article{perez2026,
-  author = {Tynan Perez and Rafael Gomez-Bombarelli},
+  author = {Perez, Tynan J. and Carretero L{\'o}pez, Luis and Deng, Bowen and G{\'o}mez-Bombarelli, Rafael},
   title = {Self-Conditioned Denoising for Atomistic Representation Learning},
-  year = {2026}
-  url={https://arxiv.org/abs/2603.17196}
+  year = {2026},
+  url = {https://arxiv.org/abs/2603.17196}
 }
 ```
 
@@ -171,3 +174,14 @@ If you use this work, please cite:
 ## About
 
 This repository was originally forked from the [pre-training-via-denoising](https://github.com/shehzaidi/pre-training-via-denoising) repo.
+
+It also includes code adapted from these projects. Files keep their original notices where the source provided them.
+
+- [TorchMD-Net](https://github.com/torchmd/torchmd-net): equivariant transformer, priors, and the neighbor-list extension (`models/ET_models/`).
+- [fairchem](https://github.com/facebookresearch/fairchem): periodic graph construction (`models/ET_models/graph_utils/`).
+- [Frad](https://github.com/fengshikun/Frad): the Frad backbone (`models/ET_models/frad/`).
+- [DimeNet](https://github.com/gasteigerjo/dimenet) and [PyTorch Geometric](https://github.com/pyg-team/pytorch_geometric): basis functions (`models/ET_models/frad/feats.py`).
+
+## License
+
+This code is released under the MIT License. See `LICENSE`.
